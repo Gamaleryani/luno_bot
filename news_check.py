@@ -20,7 +20,7 @@ if __name__ == "__main__":
         for post in new_posts:
             subject, body = news.format_notification(post)
             print(f"  - {subject}")
-            notifier.notify(subject, body)
+            notifier.notify_push_only(subject, body)
             seen.add(str(post.get("id")))
 
     news.save_seen_ids(seen)

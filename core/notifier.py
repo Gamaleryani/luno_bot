@@ -92,6 +92,12 @@ def notify(subject: str, body: str, urgent: bool = False) -> None:
     _send_push(subject, body, priority="urgent" if urgent else "default")
 
 
+def notify_push_only(subject: str, body: str, urgent: bool = False) -> None:
+    """Push-only send (no email) - used for news awareness, which is
+    high-frequency (every 30 min) and would otherwise flood an inbox."""
+    _send_push(subject, body, priority="urgent" if urgent else "default")
+
+
 def trade_notification(profile_label: str, action: str, price: float, size_myr: float,
                         balance: float, reason: str, is_big: bool) -> None:
     flag = "[BIG TRADE] " if is_big else ""
