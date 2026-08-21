@@ -21,7 +21,6 @@ jobs:
 
       - name: Check for important news
         env:
-          CRYPTOPANIC_API_TOKEN: ${{ secrets.CRYPTOPANIC_API_TOKEN }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: python news_check.py
 

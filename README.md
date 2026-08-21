@@ -88,23 +88,38 @@ a profile's `MODE` is `"live"`; it's inert in paper/backtest.
 ```
 python news_check.py
 ```
-Checks CryptoPanic's community-flagged "important" BTC news every 30 minutes
-(`.github/workflows/news_check.yml`) and sends a notification (email + push)
-for anything new — a link and headline, nothing more. **This never feeds into
-strategy.evaluate() or any buy/sell decision.**
+Checks Google News RSS for Bitcoin headlines every 30 minutes
+(`.github/workflows/news_check.yml`), flags anything matching a hand-picked
+list of high-impact keywords (`core/news.IMPORTANT_KEYWORDS` — regulation,
+ETF, hacks, lawsuits, central bank/Fed moves, elections, crashes/surges,
+etc.), and sends a **push notification only** (no email — this runs every
+30 min and would flood an inbox) for anything new. First run establishes a
+silent baseline instead of dumping the whole backlog as notifications.
+**This never feeds into strategy.evaluate() or any buy/sell decision.**
 
-Why not a real trading strategy: researched this properly (2026-08-21) before
-building anything - free news APIs are too rate-limited for our polling
-cadence, there isn't enough historical political/regulatory event data to
-honestly backtest against (unlike the price-only strategies, which had years
-of clean candle data), and crypto typically reacts to news within minutes,
-faster than an hourly/4-hourly bot can act on anyway. See conversation history
-for the full reasoning. This gives you the awareness/context benefit without
+Originally tried CryptoPanic (purpose-built crypto news with community
+"important" voting) instead of keyword-matching Google News, but its API is
+behind Cloudflare bot-protection that blocks datacenter/CI IPs outright —
+confirmed both from this dev sandbox and from an actual GitHub Actions
+runner, valid token and all, both got HTTP 403. Google News RSS has no such
+block and needs no signup at all, at the cost of needing our own keyword
+filter instead of a community-vote signal. `IMPORTANT_KEYWORDS` is a first
+pass — tune it if it's too noisy or misses things.
+
+Known limitation: the same story from multiple outlets (e.g. Reuters +
+Yahoo Finance both covering one event) isn't deduplicated — each unique
+article URL gets its own notification.
+
+Why not a real trading strategy at all: researched this properly
+(2026-08-21) before building anything — there isn't enough historical
+political/regulatory event data to honestly backtest against (unlike the
+price-only strategies, which had years of clean candle data), and crypto
+typically reacts to news within minutes, faster than an hourly/4-hourly bot
+can act on anyway. This gives the awareness/context benefit without
 pretending we can systematize something we can't validate.
 
-**Setup**: sign up for a free API token at
-https://cryptopanic.com/developers/api/ (no payment needed for this tier),
-then set `CRYPTOPANIC_API_TOKEN` as a repo secret the same way as the others.
+**Setup**: nothing needed beyond `NTFY_TOPIC` (already set) — no API key,
+no signup. It's live already.
 
 ## Dashboard
 ```
