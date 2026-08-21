@@ -1,0 +1,42 @@
+name: Luno Bot - range_1h_defensive
+
+on:
+  schedule:
+    - cron: "3 * * * *"  # every hour, 3 min past the hour
+  workflow_dispatch: {}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Run bot cycle
+        env:
+          LUNO_API_KEY_ID: ${{ secrets.LUNO_API_KEY_ID }}
+          LUNO_API_SECRET: ${{ secrets.LUNO_API_SECRET }}
+          EMAIL_SMTP_HOST: ${{ secrets.EMAIL_SMTP_HOST }}
+          EMAIL_SMTP_PORT: ${{ secrets.EMAIL_SMTP_PORT }}
+          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: python main.py --profile range_1h_defensive
+
+      - name: Regenerate dashboard
+        run: python generate_dashboard.py
+
+      - name: Commit updated state/logs/dashboard
+        run: |
+          git config user.name "luno-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add state/ logs/ dashboard.html
+          git diff --staged --quiet || git commit -m "range_1h_defensive run $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push

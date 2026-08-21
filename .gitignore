@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+logs/task_*.log
+_site/
