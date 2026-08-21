@@ -13,6 +13,7 @@ import csv
 import html
 import json
 import os
+from datetime import datetime, timedelta, timezone
 
 import config as cfg
 from core.profiles import PROFILES
@@ -20,6 +21,32 @@ from core.profiles import PROFILES
 STATE_DIR = "state"
 LOG_DIR_ROOT = "logs"
 OUT_FILE = "dashboard.html"
+
+
+def next_run_utc(schedule: dict, now: datetime = None) -> datetime:
+    """Computes the next cron firing for a simple 'every N hours at minute M'
+    schedule (matches the .github/workflows/*.yml cron expressions - keep
+    interval_hours/minute_offset in core/profiles.py in sync with those)."""
+    now = now or datetime.now(timezone.utc)
+    interval = schedule["interval_hours"]
+    minute = schedule["minute_offset"]
+    candidate = now.replace(minute=minute, second=0, microsecond=0)
+    # round current hour down to the nearest interval boundary, then step
+    # forward in `interval`-hour jumps until we're at/after `now`
+    candidate = candidate.replace(hour=(now.hour // interval) * interval)
+    while candidate <= now:
+        candidate += timedelta(hours=interval)
+    return candidate
+
+
+def format_countdown(target: datetime, now: datetime = None) -> str:
+    now = now or datetime.now(timezone.utc)
+    delta = target - now
+    total_minutes = max(0, int(delta.total_seconds() // 60))
+    hours, minutes = divmod(total_minutes, 60)
+    if hours:
+        return f"in {hours}h {minutes}m"
+    return f"in {minutes}m"
 
 
 def load_profile_data(name: str) -> dict:
@@ -79,12 +106,21 @@ def render_card(name: str, data: dict) -> str:
     if not trade_rows:
         trade_rows = '<tr><td colspan="6" class="empty">No trades logged yet - still watching the market.</td></tr>'
 
+    schedule = PROFILES[name].get("schedule")
+    next_run_html = ""
+    if schedule:
+        nxt = next_run_utc(schedule)
+        next_run_html = (f'<span class="next-run">next check: '
+                          f'<span class="mono">{format_countdown(nxt)}</span> '
+                          f'({nxt.strftime("%H:%M")} UTC)</span>')
+
     return f"""
     <section class="card">
       <header class="card-head">
         <div>
           <h2>{label}</h2>
           <span class="regime-tag">last seen regime: {html.escape(regime)}</span>
+          {next_run_html}
         </div>
         {pos_chip}
       </header>
@@ -221,8 +257,11 @@ if __name__ == "__main__":
     padding: 22px 24px 8px;
   }}
   .card-head {{ display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 18px; }}
+  .card-head > div {{ display: flex; flex-direction: column; gap: 3px; }}
   .card-head h2 {{ margin: 0; font-size: 1.15rem; font-weight: 600; }}
   .regime-tag {{ font-size: 0.78rem; color: var(--muted); }}
+  .next-run {{ font-size: 0.78rem; color: var(--accent); }}
+  .next-run .mono {{ font-weight: 600; }}
 
   .chip {{
     font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em;

@@ -15,6 +15,8 @@ PROFILES = {
         "CANDLE_DURATION": 14400,
         "STOP_LOSS_PCT": 0.05,
         "TAKE_PROFIT_PCT": 0.08,
+        # matches .github/workflows/trend_4h.yml's cron: "5 */4 * * *" (UTC)
+        "schedule": {"interval_hours": 4, "minute_offset": 5},
     },
     "range_1h_defensive": {
         "label": "1h range-only tight exits (defensive)",
@@ -22,6 +24,8 @@ PROFILES = {
         "ALLOWED_REGIMES": ["ranging"],
         "STOP_LOSS_PCT": 0.02,
         "TAKE_PROFIT_PCT": 0.03,
+        # matches .github/workflows/range_1h_defensive.yml's cron: "3 * * * *" (UTC)
+        "schedule": {"interval_hours": 1, "minute_offset": 3},
     },
 }
 
@@ -33,7 +37,7 @@ def apply_profile(cfg, name: str) -> dict:
         raise ValueError(f"Unknown profile '{name}'. Choices: {list(PROFILES)}")
     overrides = PROFILES[name]
     for key, value in overrides.items():
-        if key == "label":
+        if key in ("label", "schedule"):
             continue
         setattr(cfg, key, value)
     return {

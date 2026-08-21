@@ -91,8 +91,11 @@
     padding: 22px 24px 8px;
   }
   .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 18px; }
+  .card-head > div { display: flex; flex-direction: column; gap: 3px; }
   .card-head h2 { margin: 0; font-size: 1.15rem; font-weight: 600; }
   .regime-tag { font-size: 0.78rem; color: var(--muted); }
+  .next-run { font-size: 0.78rem; color: var(--accent); }
+  .next-run .mono { font-weight: 600; }
 
   .chip {
     font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; letter-spacing: 0.04em;
@@ -161,6 +164,7 @@
         <div>
           <h2>4h wider-stops (trend-friendly)</h2>
           <span class="regime-tag">last seen regime: trending</span>
+          <span class="next-run">next check: <span class="mono">in 56m</span> (08:05 UTC)</span>
         </div>
         <span class="chip chip-active">position open</span>
       </header>
@@ -196,6 +200,7 @@
         <div>
           <h2>1h range-only tight exits (defensive)</h2>
           <span class="regime-tag">last seen regime: unknown</span>
+          <span class="next-run">next check: <span class="mono">in 54m</span> (08:03 UTC)</span>
         </div>
         <span class="chip chip-flat">flat</span>
       </header>

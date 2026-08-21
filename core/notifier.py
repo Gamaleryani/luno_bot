@@ -1,11 +1,15 @@
 """
-Sends email notifications for trade events. Uses plain SMTP so it works
-with any provider (Gmail, Outlook, etc.) - this runs unattended as part
-of the bot's own process, so it needs its own credentials, separate from
-whatever email tools a human might use interactively.
+Sends notifications for trade/approval events over two channels:
+- Email via SMTP (any provider) - see EMAIL_* env vars below.
+- Push via ntfy.sh (https://ntfy.sh) - a free, account-less push service.
+  Install the ntfy app and subscribe to your topic to get phone push
+  notifications. See NTFY_TOPIC below.
 
-Required env vars (all optional - if any are missing, notify() prints a
-warning and does nothing rather than crashing the trading loop):
+Both are best-effort and independent: if one is unconfigured or fails, the
+other still tries, and neither ever raises - a notification failure must
+never interrupt trading.
+
+Required env vars (all optional per-channel):
   EMAIL_SMTP_HOST     e.g. smtp.gmail.com
   EMAIL_SMTP_PORT     e.g. 587 (STARTTLS) - defaults to 587
   EMAIL_USERNAME      the account to send from
@@ -13,17 +17,22 @@ warning and does nothing rather than crashing the trading loop):
                        for Gmail: Google Account -> Security -> 2-Step Verification
                        -> App Passwords)
   EMAIL_TO            where to send notifications (can be same as EMAIL_USERNAME)
+  NTFY_TOPIC          a private, hard-to-guess topic name (ntfy topics are public -
+                       anyone who knows the topic name can read it, so treat the
+                       name itself as a secret). Subscribe to it in the ntfy app.
 
 Never put these values in code or config.py - set them as environment
-variables on the machine that runs the bot.
+variables / repo secrets on whatever runs the bot.
 """
 
 import os
 import smtplib
 from email.message import EmailMessage
 
+import requests
 
-def _config_from_env():
+
+def _email_config_from_env():
     host = os.environ.get("EMAIL_SMTP_HOST")
     port = os.environ.get("EMAIL_SMTP_PORT", "587")
     username = os.environ.get("EMAIL_USERNAME")
@@ -35,21 +44,17 @@ def _config_from_env():
             "password": password, "to": to_addr}
 
 
-def notify(subject: str, body: str) -> bool:
-    """Best-effort email send. Returns True if sent, False if skipped/failed -
-    callers should never let a notification failure interrupt trading."""
-    cfg = _config_from_env()
+def _send_email(subject: str, body: str) -> bool:
+    cfg = _email_config_from_env()
     if cfg is None:
         print(f"[notifier] EMAIL_* env vars not fully set - skipping email. "
               f"Would have sent: '{subject}'")
         return False
-
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = cfg["username"]
     msg["To"] = cfg["to"]
     msg.set_content(body)
-
     try:
         with smtplib.SMTP(cfg["host"], cfg["port"], timeout=15) as server:
             server.starttls()
@@ -59,6 +64,32 @@ def notify(subject: str, body: str) -> bool:
     except Exception as e:
         print(f"[notifier] failed to send email: {e}")
         return False
+
+
+def _send_push(subject: str, body: str, priority: str = "default") -> bool:
+    topic = os.environ.get("NTFY_TOPIC")
+    if not topic:
+        print(f"[notifier] NTFY_TOPIC not set - skipping push. Would have sent: '{subject}'")
+        return False
+    try:
+        resp = requests.post(
+            f"https://ntfy.sh/{topic}",
+            data=body.encode("utf-8"),
+            headers={"Title": subject, "Priority": priority},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return True
+    except Exception as e:
+        print(f"[notifier] failed to send push: {e}")
+        return False
+
+
+def notify(subject: str, body: str, urgent: bool = False) -> None:
+    """Best-effort send over both channels. Never raises - callers should
+    never let a notification failure interrupt trading."""
+    _send_email(subject, body)
+    _send_push(subject, body, priority="urgent" if urgent else "default")
 
 
 def trade_notification(profile_label: str, action: str, price: float, size_myr: float,
@@ -73,4 +104,4 @@ def trade_notification(profile_label: str, action: str, price: float, size_myr: 
         f"Balance after: {balance:.2f} MYR\n"
         f"Reason: {reason}\n"
     )
-    notify(subject, body)
+    notify(subject, body, urgent=is_big)

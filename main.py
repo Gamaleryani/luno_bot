@@ -63,6 +63,7 @@ def _buy(client, profile_name, profile_label, log_dir, approval_dir, balance, si
                 f"Proposed BUY of {size_myr:.2f} MYR @ {price:.2f}.\nReason: {reason}\n\n"
                 f"Run `python approve_trade.py {profile_name}` to approve. Nothing will "
                 f"execute until you do, and this expires if the bot's decision changes.",
+                urgent=True,
             )
             print(f"BUY of {size_myr:.2f} MYR is above the approval threshold - "
                   f"queued for approval, not executed.")
@@ -93,6 +94,7 @@ def _sell(client, profile_name, profile_label, log_dir, approval_dir, balance, p
                 f"Proposed SELL of {size_myr:.2f} MYR position @ {price:.2f}.\nReason: {reason}\n\n"
                 f"Run `python approve_trade.py {profile_name}` to approve. Nothing will "
                 f"execute until you do, and this expires if the bot's decision changes.",
+                urgent=True,
             )
             print("SELL is above the approval threshold - queued for approval, not executed.")
             return balance, position  # keep holding until approved
