@@ -140,7 +140,8 @@
   <div class="masthead">
     <span class="eyebrow">XBTMYR &middot; paper mode</span>
     <h1>Luno Bot Dashboard</h1>
-    <span class="subtitle">Two strategies running in parallel, no real capital at risk. Regenerate after each bot run to refresh.</span>
+    <span class="subtitle">Two strategies running in parallel against real live prices, no real capital at risk.</span>
+    <span class="subtitle mono">Data as of this page's last bot run: 2026-08-21 08:12 UTC</span>
   </div>
 
   <div class="summary-bar">
@@ -169,7 +170,7 @@
         <div>
           <h2>4h wider-stops (trend-friendly)</h2>
           <span class="regime-tag">last seen regime: trending</span>
-          <span class="next-run">next check: <span class="mono">in 11m</span> (08:05 UTC)</span>
+          <span class="next-run" data-interval-hours="4" data-minute-offset="5">next check: <span class="mono next-run-text">calculating&hellip;</span></span>
         </div>
         <span class="chip chip-active">position open</span>
       </header>
@@ -205,7 +206,7 @@
         <div>
           <h2>1h range-only tight exits (defensive)</h2>
           <span class="regime-tag">last seen regime: unknown</span>
-          <span class="next-run">next check: <span class="mono">in 9m</span> (08:03 UTC)</span>
+          <span class="next-run" data-interval-hours="1" data-minute-offset="3">next check: <span class="mono next-run-text">calculating&hellip;</span></span>
         </div>
         <span class="chip chip-flat">flat</span>
       </header>
@@ -242,4 +243,35 @@
       navigator.serviceWorker.register("sw.js").catch(() => {});
     });
   }
+
+  // Live "next run" countdown - computed from the viewer's own clock, not
+  // baked in at page-generation time, so it stays correct no matter how
+  // long ago this static file was last regenerated.
+  function nextRunUTC(intervalHours, minuteOffset, now) {
+    const candidate = new Date(now);
+    candidate.setUTCMinutes(minuteOffset, 0, 0);
+    candidate.setUTCHours(Math.floor(now.getUTCHours() / intervalHours) * intervalHours);
+    while (candidate <= now) {
+      candidate.setUTCHours(candidate.getUTCHours() + intervalHours);
+    }
+    return candidate;
+  }
+
+  function updateCountdowns() {
+    const now = new Date();
+    document.querySelectorAll(".next-run").forEach((el) => {
+      const interval = parseInt(el.dataset.intervalHours, 10);
+      const minute = parseInt(el.dataset.minuteOffset, 10);
+      const target = nextRunUTC(interval, minute, now);
+      const totalMinutes = Math.max(0, Math.floor((target - now) / 60000));
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      const countdown = hours > 0 ? `in ${hours}h ${minutes}m` : `in ${minutes}m`;
+      const hh = String(target.getUTCHours()).padStart(2, "0");
+      const mm = String(target.getUTCMinutes()).padStart(2, "0");
+      el.querySelector(".next-run-text").textContent = `${countdown} (${hh}:${mm} UTC)`;
+    });
+  }
+  updateCountdowns();
+  setInterval(updateCountdowns, 15000);
 </script>

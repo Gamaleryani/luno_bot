@@ -13,7 +13,7 @@ import csv
 import html
 import json
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 import config as cfg
 from core.profiles import PROFILES
@@ -22,31 +22,12 @@ STATE_DIR = "state"
 LOG_DIR_ROOT = "logs"
 OUT_FILE = "dashboard.html"
 
-
-def next_run_utc(schedule: dict, now: datetime = None) -> datetime:
-    """Computes the next cron firing for a simple 'every N hours at minute M'
-    schedule (matches the .github/workflows/*.yml cron expressions - keep
-    interval_hours/minute_offset in core/profiles.py in sync with those)."""
-    now = now or datetime.now(timezone.utc)
-    interval = schedule["interval_hours"]
-    minute = schedule["minute_offset"]
-    candidate = now.replace(minute=minute, second=0, microsecond=0)
-    # round current hour down to the nearest interval boundary, then step
-    # forward in `interval`-hour jumps until we're at/after `now`
-    candidate = candidate.replace(hour=(now.hour // interval) * interval)
-    while candidate <= now:
-        candidate += timedelta(hours=interval)
-    return candidate
-
-
-def format_countdown(target: datetime, now: datetime = None) -> str:
-    now = now or datetime.now(timezone.utc)
-    delta = target - now
-    total_minutes = max(0, int(delta.total_seconds() // 60))
-    hours, minutes = divmod(total_minutes, 60)
-    if hours:
-        return f"in {hours}h {minutes}m"
-    return f"in {minutes}m"
+# "Next run" is computed live in the browser (see the <script> at the end of
+# the page), not baked in here as static text - this file is only
+# regenerated when a bot run happens, so a server-computed countdown would
+# freeze at whatever it said at that moment and look broken to anyone
+# viewing the page later (this is exactly what happened before this fix -
+# see git history 2026-08-21).
 
 
 def load_profile_data(name: str) -> dict:
@@ -109,10 +90,11 @@ def render_card(name: str, data: dict) -> str:
     schedule = PROFILES[name].get("schedule")
     next_run_html = ""
     if schedule:
-        nxt = next_run_utc(schedule)
-        next_run_html = (f'<span class="next-run">next check: '
-                          f'<span class="mono">{format_countdown(nxt)}</span> '
-                          f'({nxt.strftime("%H:%M")} UTC)</span>')
+        next_run_html = (
+            f'<span class="next-run" data-interval-hours="{schedule["interval_hours"]}" '
+            f'data-minute-offset="{schedule["minute_offset"]}">'
+            f'next check: <span class="mono next-run-text">calculating&hellip;</span></span>'
+        )
 
     return f"""
     <section class="card">
@@ -306,7 +288,8 @@ if __name__ == "__main__":
   <div class="masthead">
     <span class="eyebrow">{html.escape(cfg.PAIR)} &middot; paper mode</span>
     <h1>Luno Bot Dashboard</h1>
-    <span class="subtitle">Two strategies running in parallel, no real capital at risk. Regenerate after each bot run to refresh.</span>
+    <span class="subtitle">Two strategies running in parallel against real live prices, no real capital at risk.</span>
+    <span class="subtitle mono">Data as of this page's last bot run: {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")}</span>
   </div>
 
   <div class="summary-bar">
@@ -337,6 +320,37 @@ if __name__ == "__main__":
       navigator.serviceWorker.register("sw.js").catch(() => {{}});
     }});
   }}
+
+  // Live "next run" countdown - computed from the viewer's own clock, not
+  // baked in at page-generation time, so it stays correct no matter how
+  // long ago this static file was last regenerated.
+  function nextRunUTC(intervalHours, minuteOffset, now) {{
+    const candidate = new Date(now);
+    candidate.setUTCMinutes(minuteOffset, 0, 0);
+    candidate.setUTCHours(Math.floor(now.getUTCHours() / intervalHours) * intervalHours);
+    while (candidate <= now) {{
+      candidate.setUTCHours(candidate.getUTCHours() + intervalHours);
+    }}
+    return candidate;
+  }}
+
+  function updateCountdowns() {{
+    const now = new Date();
+    document.querySelectorAll(".next-run").forEach((el) => {{
+      const interval = parseInt(el.dataset.intervalHours, 10);
+      const minute = parseInt(el.dataset.minuteOffset, 10);
+      const target = nextRunUTC(interval, minute, now);
+      const totalMinutes = Math.max(0, Math.floor((target - now) / 60000));
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      const countdown = hours > 0 ? `in ${{hours}}h ${{minutes}}m` : `in ${{minutes}}m`;
+      const hh = String(target.getUTCHours()).padStart(2, "0");
+      const mm = String(target.getUTCMinutes()).padStart(2, "0");
+      el.querySelector(".next-run-text").textContent = `${{countdown}} (${{hh}}:${{mm}} UTC)`;
+    }});
+  }}
+  updateCountdowns();
+  setInterval(updateCountdowns, 15000);
 </script>
 """
     with open(OUT_FILE, "w", encoding="utf-8") as f:
