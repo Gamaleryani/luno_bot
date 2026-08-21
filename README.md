@@ -90,8 +90,10 @@ python generate_dashboard.py
 ```
 Renders `dashboard.html` (combined balance/P&L across both profiles, per-profile
 stats, trade history table) from whatever's currently in `state/` and `logs/`.
-Published as a Claude Artifact — re-run this and re-publish to refresh it after
-new bot runs.
+
+**Live at https://gamaleryani.github.io/luno_bot/** — auto-deployed by GitHub
+Actions after every bot run (see below), viewable from any device including
+your phone, no manual refresh needed.
 
 ## Next steps toward live
 1. Keep both paper profiles running for a few weeks and compare *forward*
@@ -108,18 +110,34 @@ Bring `logs/<profile>/trade_log.csv` back to a Claude Code session periodically 
 it can analyze what's working, which indicator combos fire before wins vs losses,
 and suggest rule tweaks.
 
-## Scheduling (for hands-off paper trading)
-Nothing here runs on its own yet. To let it run unattended, set up a Windows
-Task Scheduler entry (or cron on Linux/Mac) that runs, on an interval matching
-each profile's candle duration (e.g. every hour for `range_1h_defensive`, every
-4 hours for `trend_4h`):
-```
-"%LOCALAPPDATA%\PythonEmbed312\python.exe" main.py --profile trend_4h
-```
-with working directory set to this folder and the `LUNO_API_KEY_ID` /
-`LUNO_API_SECRET` / `EMAIL_*` env vars available to the scheduled task (set them
-as persistent user environment variables via `setx`, not inline in the task).
-Not set up automatically here — ask if you want help configuring this.
+## Scheduling — runs in the cloud, not on this PC (set up 2026-08-21)
+The bot runs on **GitHub Actions**, not this machine, so it keeps running (and
+emailing, and updating the dashboard) even when this PC is off:
+- Repo: **https://github.com/Gamaleryani/luno_bot** (public — see note below on why)
+- `.github/workflows/trend_4h.yml` — runs every 4 hours
+- `.github/workflows/range_1h_defensive.yml` — runs hourly
+- Both call `.github/workflows/deploy_dashboard.yml` as a final step, which
+  publishes `dashboard.html` to GitHub Pages
+- Credentials (`LUNO_API_KEY_ID`, `LUNO_API_SECRET`, `EMAIL_*`) live as
+  encrypted repo secrets (Settings → Secrets and variables → Actions) — never
+  in the code
+- Trigger a run manually any time: `gh workflow run trend_4h.yml` (or via the
+  Actions tab on github.com), or check status with `gh run list`
+
+**Why the repo is public**: GitHub Pages (needed for the phone-accessible
+dashboard URL) isn't available for private repos on the free plan. Only code
+and simulated paper-trading logs are public — no credentials, no real money.
+
+**Local Windows Task Scheduler entries were removed** (they briefly existed
+2026-08-21 as a first pass, called `LunoBot_trend_4h` /
+`LunoBot_range_1h_defensive`) — running both local and cloud versions would
+create two divergent trading histories with separate state files. The cloud
+version is the only one running now. `run_profile.ps1` is kept in the repo for
+reference / as a fallback if you ever want to run locally again instead.
+
+To go live eventually, update the `MODE` in `core/profiles.py` and the repo
+secrets to a trade-permission key the same way — no separate deployment step
+needed, the workflow already reads from `config.py`/`core/profiles.py`.
 
 ## Local environment (this machine, set up 2026-08-19)
 No system Python was present, and neither `winget` nor the official installer
