@@ -84,6 +84,28 @@ on its next run (price within 1%) — if the market moved on, the stale proposal
 dropped and a fresh one queued, never executed blindly. This only activates once
 a profile's `MODE` is `"live"`; it's inert in paper/backtest.
 
+## News awareness (notification-only, NOT a trading strategy)
+```
+python news_check.py
+```
+Checks CryptoPanic's community-flagged "important" BTC news every 30 minutes
+(`.github/workflows/news_check.yml`) and sends a notification (email + push)
+for anything new — a link and headline, nothing more. **This never feeds into
+strategy.evaluate() or any buy/sell decision.**
+
+Why not a real trading strategy: researched this properly (2026-08-21) before
+building anything - free news APIs are too rate-limited for our polling
+cadence, there isn't enough historical political/regulatory event data to
+honestly backtest against (unlike the price-only strategies, which had years
+of clean candle data), and crypto typically reacts to news within minutes,
+faster than an hourly/4-hourly bot can act on anyway. See conversation history
+for the full reasoning. This gives you the awareness/context benefit without
+pretending we can systematize something we can't validate.
+
+**Setup**: sign up for a free API token at
+https://cryptopanic.com/developers/api/ (no payment needed for this tier),
+then set `CRYPTOPANIC_API_TOKEN` as a repo secret the same way as the others.
+
 ## Dashboard
 ```
 python generate_dashboard.py
