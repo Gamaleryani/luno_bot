@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
 <style>
   :root {
     --bg: #eef1f6;
@@ -124,6 +126,24 @@
   .pos { color: var(--pos); }
   .neg { color: var(--neg); }
 
+  .chart-wrap { margin: 4px 0 18px; }
+  .chart-empty {
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    height: 100px; color: var(--muted); font-size: 0.82rem; font-style: italic;
+    background: var(--surface-2); border-radius: 10px; padding: 12px;
+  }
+
+  .report-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-bottom: 18px;
+  }
+  .report {
+    background: var(--surface-2); border-radius: 10px; padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .report-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .report-body { font-size: 0.88rem; }
+
   .table-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 0.83rem; margin: 8px 0 16px; }
   th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
@@ -134,6 +154,7 @@
   @media (max-width: 640px) {
     .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .stat-wide { grid-column: span 2; }
+    .report-row { grid-template-columns: 1fr; }
   }
 </style>
 <div class="page">
@@ -141,7 +162,7 @@
     <span class="eyebrow">XBTMYR &middot; paper mode</span>
     <h1>Luno Bot Dashboard</h1>
     <span class="subtitle">Two strategies running in parallel against real live prices, no real capital at risk.</span>
-    <span class="subtitle mono">Data as of this page's last bot run: 2026-08-21 08:12 UTC</span>
+    <span class="subtitle mono">Data as of this page's last bot run: 2026-08-21 08:21 UTC</span>
   </div>
 
   <div class="summary-bar">
@@ -192,6 +213,14 @@
           <span class="mono num stat-value">1</span>
         </div>
       </div>
+
+      <div class="chart-wrap"><canvas id="chart-trend_4h" height="220"></canvas></div><script type="application/json" class="chart-data" data-chart-id="chart-trend_4h">{"price": [{"t": "2026-08-21T08:21:17.610291+00:00", "y": 305563.0}], "buys": [{"t": "2026-08-20T15:42:03.979930+00:00", "y": 288952.0}], "sells": []}</script>
+
+      <div class="report-row">
+        <div class="report"><span class="report-label">Today</span><span class="report-body muted">No closed trades in this window.</span></div>
+        <div class="report"><span class="report-label">This week</span><span class="report-body muted">No closed trades in this window.</span></div>
+      </div>
+
       <div class="table-wrap">
         <table>
           <thead><tr><th>Time</th><th>Action</th><th>Price</th><th>Balance</th><th>Regime</th><th>Reason</th></tr></thead>
@@ -228,6 +257,14 @@
           <span class="mono num stat-value">0</span>
         </div>
       </div>
+
+      <div class="chart-wrap"><canvas id="chart-range_1h_defensive" height="220"></canvas></div><script type="application/json" class="chart-data" data-chart-id="chart-range_1h_defensive">{"price": [{"t": "2026-08-21T08:21:21.277217+00:00", "y": 305563.0}], "buys": [], "sells": []}</script>
+
+      <div class="report-row">
+        <div class="report"><span class="report-label">Today</span><span class="report-body muted">No closed trades in this window.</span></div>
+        <div class="report"><span class="report-label">This week</span><span class="report-body muted">No closed trades in this window.</span></div>
+      </div>
+
       <div class="table-wrap">
         <table>
           <thead><tr><th>Time</th><th>Action</th><th>Price</th><th>Balance</th><th>Regime</th><th>Reason</th></tr></thead>
@@ -274,4 +311,52 @@
   }
   updateCountdowns();
   setInterval(updateCountdowns, 15000);
+
+  // Price chart per profile: line = price over time (every bot run, since
+  // 2026-08-21), green/red dots = actual buy/sell trades.
+  document.querySelectorAll(".chart-data").forEach((el) => {
+    const data = JSON.parse(el.textContent);
+    const canvas = document.getElementById(el.dataset.chartId);
+    if (!canvas || typeof Chart === "undefined") return;
+    const styles = getComputedStyle(document.documentElement);
+    const accent = styles.getPropertyValue("--accent").trim();
+    const pos = styles.getPropertyValue("--pos").trim();
+    const neg = styles.getPropertyValue("--neg").trim();
+    const muted = styles.getPropertyValue("--muted").trim();
+    const border = styles.getPropertyValue("--border").trim();
+
+    new Chart(canvas, {
+      type: "line",
+      data: {
+        datasets: [
+          {
+            label: "Price", data: data.price, parsing: {xAxisKey: "t", yAxisKey: "y"},
+            borderColor: accent, backgroundColor: "transparent", borderWidth: 1.5,
+            pointRadius: 0, tension: 0.15,
+          },
+          {
+            label: "Buy", data: data.buys, parsing: {xAxisKey: "t", yAxisKey: "y"},
+            type: "scatter", backgroundColor: pos, borderColor: pos,
+            pointRadius: 5, pointStyle: "triangle",
+          },
+          {
+            label: "Sell", data: data.sells, parsing: {xAxisKey: "t", yAxisKey: "y"},
+            type: "scatter", backgroundColor: neg, borderColor: neg,
+            pointRadius: 5, pointStyle: "rectRot",
+          },
+        ],
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: {mode: "nearest", axis: "x", intersect: false},
+        scales: {
+          x: {type: "time", ticks: {color: muted, maxTicksLimit: 6}, grid: {color: border}},
+          y: {ticks: {color: muted}, grid: {color: border}},
+        },
+        plugins: {
+          legend: {labels: {color: muted, boxWidth: 12, font: {size: 11}}},
+        },
+      },
+    });
+  });
 </script>

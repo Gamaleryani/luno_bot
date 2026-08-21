@@ -121,12 +121,14 @@ def run_once(client: LunoClient, profile_name: str, profile_label: str,
     if position is not None:
         exit_check = risk.check_exit(position["entry_price"], price, cfg)
         if exit_check["exit"]:
+            logger.log_price(log_dir, price, "-", balance)
             return _sell(client, profile_name, profile_label, log_dir, approval_dir,
                           balance, position, price, exit_check["reason"], "-")
 
     # 2. evaluate strategy for a new decision
     decision = strategy.evaluate(df, i, cfg)
     print(f"[{decision['action']}] {decision['reason']}")
+    logger.log_price(log_dir, price, decision["regime"], balance)
 
     if decision["action"] == "BUY" and position is None:
         size_myr = risk.position_size(balance, row.get("atr", 0), price, cfg)

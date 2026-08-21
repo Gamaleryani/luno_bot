@@ -1,0 +1,61 @@
+"""
+Computes plain-English daily/weekly summaries from a profile's trade_log.csv
+for the dashboard. Walks the full trade history (not just the report window)
+so a round-trip that started before the window but closed inside it is still
+counted correctly, using each row's post-action balance to derive realized
+P/L per closed trade.
+"""
+
+from datetime import datetime, timedelta, timezone
+
+
+def _parse_ts(ts: str) -> datetime:
+    dt = datetime.fromisoformat(ts)
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+
+def compute_window_report(trades: list, starting_balance: float, window_hours: float) -> dict:
+    """`trades` is the full trade_log.csv rows (dicts with timestamp/action/
+    price/balance), oldest first."""
+    if not trades:
+        return {"trade_count": 0, "wins": 0, "losses": 0, "net_change": 0.0,
+                "start_balance": None, "end_balance": None}
+
+    now = _parse_ts(trades[-1]["timestamp"])
+    since = now - timedelta(hours=window_hours)
+
+    pre_buy_balance = starting_balance
+    last_balance_before_window = starting_balance
+    last_balance = starting_balance
+    trade_count = 0
+    wins = 0
+    losses = 0
+
+    for row in trades:
+        ts = _parse_ts(row["timestamp"])
+        balance = float(row["balance"])
+        in_window = ts >= since
+
+        if row["action"] == "BUY":
+            pre_buy_balance = last_balance
+        elif row["action"] == "SELL":
+            if in_window:
+                pnl = balance - pre_buy_balance
+                trade_count += 1
+                if pnl > 0:
+                    wins += 1
+                else:
+                    losses += 1
+
+        if not in_window:
+            last_balance_before_window = balance
+        last_balance = balance
+
+    return {
+        "trade_count": trade_count,
+        "wins": wins,
+        "losses": losses,
+        "net_change": last_balance - last_balance_before_window,
+        "start_balance": last_balance_before_window,
+        "end_balance": last_balance,
+    }

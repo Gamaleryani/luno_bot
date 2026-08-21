@@ -30,6 +30,23 @@ def log_event(log_dir: str, event: dict):
         })
 
 
+def log_price(log_dir: str, price: float, regime: str, balance: float):
+    """Logs the price seen on EVERY run (not just trades), so the dashboard
+    can chart price over time with buy/sell markers. Started 2026-08-21 -
+    won't have history from before that, it accumulates from here on."""
+    os.makedirs(log_dir, exist_ok=True)
+    path = os.path.join(log_dir, "price_log.csv")
+    is_new = not os.path.exists(path)
+    with open(path, "a", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=["timestamp", "price", "regime", "balance"])
+        if is_new:
+            writer.writeheader()
+        writer.writerow({
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "price": price, "regime": regime, "balance": balance,
+        })
+
+
 def summarize_performance(trades: list, starting_balance: float, ending_balance: float,
                            total_fees: float = None) -> str:
     """

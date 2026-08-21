@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 
 import config as cfg
 from core.profiles import PROFILES
+from core.reports import compute_window_report
 
 STATE_DIR = "state"
 LOG_DIR_ROOT = "logs"
@@ -33,6 +34,7 @@ OUT_FILE = "dashboard.html"
 def load_profile_data(name: str) -> dict:
     state_path = os.path.join(STATE_DIR, f"{name}.json")
     log_path = os.path.join(LOG_DIR_ROOT, name, "trade_log.csv")
+    price_log_path = os.path.join(LOG_DIR_ROOT, name, "price_log.csv")
 
     state = {"balance": cfg.STARTING_BALANCE_MYR, "position": None}
     if os.path.exists(state_path):
@@ -44,7 +46,12 @@ def load_profile_data(name: str) -> dict:
         with open(log_path, newline="") as f:
             trades = list(csv.DictReader(f))
 
-    return {"state": state, "trades": trades}
+    prices = []
+    if os.path.exists(price_log_path):
+        with open(price_log_path, newline="") as f:
+            prices = list(csv.DictReader(f))
+
+    return {"state": state, "trades": trades, "prices": prices}
 
 
 def regime_of_last_trade(trades) -> str:
@@ -96,6 +103,41 @@ def render_card(name: str, data: dict) -> str:
             f'next check: <span class="mono next-run-text">calculating&hellip;</span></span>'
         )
 
+    # --- report panel: today (24h) and this week (7d) ---
+    today = compute_window_report(data["trades"], cfg.STARTING_BALANCE_MYR, 24)
+    week = compute_window_report(data["trades"], cfg.STARTING_BALANCE_MYR, 24 * 7)
+
+    def report_html(label_text, r):
+        if r["trade_count"] == 0:
+            return (f'<div class="report"><span class="report-label">{label_text}</span>'
+                     f'<span class="report-body muted">No closed trades in this window.</span></div>')
+        cls = "pos" if r["net_change"] >= 0 else "neg"
+        return (
+            f'<div class="report">'
+            f'<span class="report-label">{label_text}</span>'
+            f'<span class="report-body">'
+            f'<span class="mono num {cls}">{r["net_change"]:+.2f} MYR</span> &middot; '
+            f'{r["trade_count"]} closed ({r["wins"]}W / {r["losses"]}L)'
+            f'</span></div>'
+        )
+
+    # --- price/trade chart data (embedded as JSON for Chart.js) ---
+    price_points = [{"t": p["timestamp"], "y": float(p["price"])} for p in data["prices"] if p.get("price")]
+    buy_points = [{"t": t["timestamp"], "y": float(t["price"])} for t in data["trades"] if t.get("action") == "BUY"]
+    sell_points = [{"t": t["timestamp"], "y": float(t["price"])} for t in data["trades"] if t.get("action") == "SELL"]
+    chart_html = ""
+    if price_points:
+        chart_id = f"chart-{name}"
+        chart_data = json.dumps({"price": price_points, "buys": buy_points, "sells": sell_points})
+        chart_html = (
+            f'<div class="chart-wrap"><canvas id="{chart_id}" height="220"></canvas></div>'
+            f'<script type="application/json" class="chart-data" data-chart-id="{chart_id}">'
+            f'{chart_data}</script>'
+        )
+    else:
+        chart_html = ('<div class="chart-wrap chart-empty">Price chart will appear once a few runs have '
+                       'logged data (started 2026-08-21 - no history before that).</div>')
+
     return f"""
     <section class="card">
       <header class="card-head">
@@ -124,6 +166,14 @@ def render_card(name: str, data: dict) -> str:
           <span class="mono num stat-value">{len(data['trades'])}</span>
         </div>
       </div>
+
+      {chart_html}
+
+      <div class="report-row">
+        {report_html("Today", today)}
+        {report_html("This week", week)}
+      </div>
+
       <div class="table-wrap">
         <table>
           <thead><tr><th>Time</th><th>Action</th><th>Price</th><th>Balance</th><th>Regime</th><th>Reason</th></tr></thead>
@@ -155,6 +205,8 @@ if __name__ == "__main__":
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
 <style>
   :root {{
     --bg: #eef1f6;
@@ -272,6 +324,24 @@ if __name__ == "__main__":
   .pos {{ color: var(--pos); }}
   .neg {{ color: var(--neg); }}
 
+  .chart-wrap {{ margin: 4px 0 18px; }}
+  .chart-empty {{
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    height: 100px; color: var(--muted); font-size: 0.82rem; font-style: italic;
+    background: var(--surface-2); border-radius: 10px; padding: 12px;
+  }}
+
+  .report-row {{
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    margin-bottom: 18px;
+  }}
+  .report {{
+    background: var(--surface-2); border-radius: 10px; padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 4px;
+  }}
+  .report-label {{ font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }}
+  .report-body {{ font-size: 0.88rem; }}
+
   .table-wrap {{ overflow-x: auto; }}
   table {{ width: 100%; border-collapse: collapse; font-size: 0.83rem; margin: 8px 0 16px; }}
   th, td {{ text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }}
@@ -282,6 +352,7 @@ if __name__ == "__main__":
   @media (max-width: 640px) {{
     .stat-grid {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
     .stat-wide {{ grid-column: span 2; }}
+    .report-row {{ grid-template-columns: 1fr; }}
   }}
 </style>
 <div class="page">
@@ -351,6 +422,54 @@ if __name__ == "__main__":
   }}
   updateCountdowns();
   setInterval(updateCountdowns, 15000);
+
+  // Price chart per profile: line = price over time (every bot run, since
+  // 2026-08-21), green/red dots = actual buy/sell trades.
+  document.querySelectorAll(".chart-data").forEach((el) => {{
+    const data = JSON.parse(el.textContent);
+    const canvas = document.getElementById(el.dataset.chartId);
+    if (!canvas || typeof Chart === "undefined") return;
+    const styles = getComputedStyle(document.documentElement);
+    const accent = styles.getPropertyValue("--accent").trim();
+    const pos = styles.getPropertyValue("--pos").trim();
+    const neg = styles.getPropertyValue("--neg").trim();
+    const muted = styles.getPropertyValue("--muted").trim();
+    const border = styles.getPropertyValue("--border").trim();
+
+    new Chart(canvas, {{
+      type: "line",
+      data: {{
+        datasets: [
+          {{
+            label: "Price", data: data.price, parsing: {{xAxisKey: "t", yAxisKey: "y"}},
+            borderColor: accent, backgroundColor: "transparent", borderWidth: 1.5,
+            pointRadius: 0, tension: 0.15,
+          }},
+          {{
+            label: "Buy", data: data.buys, parsing: {{xAxisKey: "t", yAxisKey: "y"}},
+            type: "scatter", backgroundColor: pos, borderColor: pos,
+            pointRadius: 5, pointStyle: "triangle",
+          }},
+          {{
+            label: "Sell", data: data.sells, parsing: {{xAxisKey: "t", yAxisKey: "y"}},
+            type: "scatter", backgroundColor: neg, borderColor: neg,
+            pointRadius: 5, pointStyle: "rectRot",
+          }},
+        ],
+      }},
+      options: {{
+        responsive: true, maintainAspectRatio: false,
+        interaction: {{mode: "nearest", axis: "x", intersect: false}},
+        scales: {{
+          x: {{type: "time", ticks: {{color: muted, maxTicksLimit: 6}}, grid: {{color: border}}}},
+          y: {{ticks: {{color: muted}}, grid: {{color: border}}}},
+        }},
+        plugins: {{
+          legend: {{labels: {{color: muted, boxWidth: 12, font: {{size: 11}}}}}},
+        }},
+      }},
+    }});
+  }});
 </script>
 """
     with open(OUT_FILE, "w", encoding="utf-8") as f:
