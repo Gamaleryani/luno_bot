@@ -165,6 +165,11 @@ if __name__ == "__main__":
     summary_class = "pos" if total_pnl >= 0 else "neg"
 
     html_doc = f"""<title>Luno Bot Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#090c12">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -326,6 +331,13 @@ if __name__ == "__main__":
 
   {sections}
 </div>
+<script>
+  if ("serviceWorker" in navigator) {{
+    window.addEventListener("load", () => {{
+      navigator.serviceWorker.register("sw.js").catch(() => {{}});
+    }});
+  }}
+</script>
 """
     with open(OUT_FILE, "w", encoding="utf-8") as f:
         f.write(html_doc)

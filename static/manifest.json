@@ -1,0 +1,16 @@
+{
+  "name": "Luno Bot Dashboard",
+  "short_name": "Luno Bot",
+  "description": "Paper-trading dashboard for the trend_4h and range_1h_defensive XBTMYR strategies",
+  "start_url": "/luno_bot/",
+  "scope": "/luno_bot/",
+  "display": "standalone",
+  "background_color": "#090c12",
+  "theme_color": "#090c12",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
