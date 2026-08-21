@@ -16,7 +16,7 @@ import os
 
 import requests
 
-API_URL = "https://cryptopanic.com/api/v2/posts/"
+API_URL = "https://cryptopanic.com/api/v1/posts/"
 SEEN_FILE = "state/news_seen.json"
 MAX_SEEN_IDS = 500  # cap so the seen-list file doesn't grow forever
 
@@ -31,12 +31,15 @@ def fetch_important_posts(currency: str = "BTC") -> list:
             API_URL,
             params={"auth_token": token, "currencies": currency,
                     "filter": "important", "kind": "news"},
+            headers={"User-Agent": "Mozilla/5.0 (compatible; luno_bot/1.0)",
+                     "Accept": "application/json"},
             timeout=15,
         )
         resp.raise_for_status()
         return resp.json().get("results", [])
     except Exception as e:
-        print(f"[news] failed to fetch: {e}")
+        print(f"[news] failed to fetch: {e}. Response body (first 300 chars): "
+              f"{getattr(e, 'response', None) and e.response.text[:300]}")
         return []
 
 
