@@ -92,6 +92,12 @@
     text-transform: uppercase; padding: 4px 10px; border-radius: 999px;
     background: var(--accent-bg); color: var(--accent); margin-left: auto;
   }
+  .manage-link {
+    align-self: flex-start; font-size: 0.82rem; color: var(--accent); text-decoration: none;
+    font-weight: 500; display: inline-flex; align-items: center; gap: 4px;
+  }
+  .manage-link:hover { text-decoration: underline; }
+  .manage-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
   .card {
     background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
@@ -162,7 +168,7 @@
     <span class="eyebrow">XBTMYR &middot; paper mode</span>
     <h1>Luno Bot Dashboard</h1>
     <span class="subtitle">Two strategies running in parallel against real live prices, no real capital at risk.</span>
-    <span class="subtitle mono">Data as of this page's last bot run: 2026-08-22 04:36 UTC</span>
+    <span class="subtitle mono">Data as of this page's last bot run: 2026-08-22 04:35 UTC</span>
   </div>
 
   <div class="summary-bar">
@@ -184,6 +190,10 @@
     </div>
     <span class="mode-badge">paper</span>
   </div>
+
+  <a class="manage-link" href="https://github.com/Gamaleryani/luno_bot/edit/main/allocations.json" target="_blank" rel="noopener">
+    Manage allocations on GitHub &rarr;
+  </a>
 
   
     <section class="card">
@@ -215,7 +225,7 @@
         </div>
       </div>
 
-      <div class="chart-wrap"><canvas id="chart-trend_4h" height="220"></canvas></div><script type="application/json" class="chart-data" data-chart-id="chart-trend_4h">{"price": [{"t": "2026-08-21T08:21:17.610291+00:00", "y": 305563.0}, {"t": "2026-08-21T08:44:39.863753+00:00", "y": 305563.0}, {"t": "2026-08-21T12:54:44.159399+00:00", "y": 307477.0}, {"t": "2026-08-21T16:38:37.772318+00:00", "y": 309476.0}, {"t": "2026-08-21T20:29:28.300567+00:00", "y": 308946.0}, {"t": "2026-08-22T01:23:58.550207+00:00", "y": 312185.0}, {"t": "2026-08-22T04:05:14.048408+00:00", "y": 312299.0}, {"t": "2026-08-22T04:09:40.124735+00:00", "y": 312299.0}, {"t": "2026-08-22T04:36:32.702262+00:00", "y": 312299.0}], "buys": [{"t": "2026-08-20T15:42:03.979930+00:00", "y": 288952.0}], "sells": [{"t": "2026-08-22T01:23:58.550334+00:00", "y": 312185.0}]}</script>
+      <div class="chart-wrap"><canvas id="chart-trend_4h" height="220"></canvas></div><script type="application/json" class="chart-data" data-chart-id="chart-trend_4h">{"price": [{"t": "2026-08-21T08:21:17.610291+00:00", "y": 305563.0}, {"t": "2026-08-21T08:44:39.863753+00:00", "y": 305563.0}, {"t": "2026-08-21T12:54:44.159399+00:00", "y": 307477.0}, {"t": "2026-08-21T16:38:37.772318+00:00", "y": 309476.0}, {"t": "2026-08-21T20:29:28.300567+00:00", "y": 308946.0}, {"t": "2026-08-22T01:23:58.550207+00:00", "y": 312185.0}, {"t": "2026-08-22T04:05:14.048408+00:00", "y": 312299.0}, {"t": "2026-08-22T04:09:40.124735+00:00", "y": 312299.0}], "buys": [{"t": "2026-08-20T15:42:03.979930+00:00", "y": 288952.0}], "sells": [{"t": "2026-08-22T01:23:58.550334+00:00", "y": 312185.0}]}</script>
 
       <div class="report-row">
         <div class="report"><span class="report-label">Today</span><span class="report-body"><span class="mono num pos">+71.81 MYR</span> &middot; 1 closed (0W / 1L)</span></div>
@@ -262,7 +272,7 @@
         </div>
       </div>
 
-      <div class="chart-wrap"><canvas id="chart-range_1h_defensive" height="220"></canvas></div><script type="application/json" class="chart-data" data-chart-id="chart-range_1h_defensive">{"price": [{"t": "2026-08-21T08:21:21.277217+00:00", "y": 305563.0}, {"t": "2026-08-21T08:52:55.007699+00:00", "y": 305563.0}, {"t": "2026-08-21T09:47:55.642266+00:00", "y": 313998.0}, {"t": "2026-08-21T10:40:06.198374+00:00", "y": 310500.0}, {"t": "2026-08-21T11:35:10.046590+00:00", "y": 311151.0}, {"t": "2026-08-21T13:04:53.872004+00:00", "y": 309240.0}, {"t": "2026-08-21T14:47:23.510796+00:00", "y": 309774.0}, {"t": "2026-08-21T15:42:52.356629+00:00", "y": 309999.0}, {"t": "2026-08-21T16:46:13.278261+00:00", "y": 309476.0}, {"t": "2026-08-21T17:38:03.974066+00:00", "y": 310778.0}, {"t": "2026-08-21T18:50:57.371309+00:00", "y": 310544.0}, {"t": "2026-08-21T19:32:30.819830+00:00", "y": 308602.0}, {"t": "2026-08-21T20:35:09.667635+00:00", "y": 308946.0}, {"t": "2026-08-21T21:33:43.961916+00:00", "y": 309993.0}, {"t": "2026-08-21T22:35:12.761355+00:00", "y": 311833.0}, {"t": "2026-08-21T23:32:53.907839+00:00", "y": 312100.0}, {"t": "2026-08-22T01:45:16.038107+00:00", "y": 310029.0}, {"t": "2026-08-22T03:02:40.438664+00:00", "y": 310998.0}, {"t": "2026-08-22T03:53:04.395082+00:00", "y": 310998.0}, {"t": "2026-08-22T04:05:17.747328+00:00", "y": 312299.0}, {"t": "2026-08-22T04:14:26.513542+00:00", "y": 312299.0}], "buys": [], "sells": []}</script>
+      <div class="chart-wrap"><canvas id="chart-range_1h_defensive" height="220"></canvas></div><script type="application/json" class="chart-data" data-chart-id="chart-range_1h_defensive">{"price": [{"t": "2026-08-21T08:21:21.277217+00:00", "y": 305563.0}, {"t": "2026-08-21T08:52:55.007699+00:00", "y": 305563.0}, {"t": "2026-08-21T09:47:55.642266+00:00", "y": 313998.0}, {"t": "2026-08-21T10:40:06.198374+00:00", "y": 310500.0}, {"t": "2026-08-21T11:35:10.046590+00:00", "y": 311151.0}, {"t": "2026-08-21T13:04:53.872004+00:00", "y": 309240.0}, {"t": "2026-08-21T14:47:23.510796+00:00", "y": 309774.0}, {"t": "2026-08-21T15:42:52.356629+00:00", "y": 309999.0}, {"t": "2026-08-21T16:46:13.278261+00:00", "y": 309476.0}, {"t": "2026-08-21T17:38:03.974066+00:00", "y": 310778.0}, {"t": "2026-08-21T18:50:57.371309+00:00", "y": 310544.0}, {"t": "2026-08-21T19:32:30.819830+00:00", "y": 308602.0}, {"t": "2026-08-21T20:35:09.667635+00:00", "y": 308946.0}, {"t": "2026-08-21T21:33:43.961916+00:00", "y": 309993.0}, {"t": "2026-08-21T22:35:12.761355+00:00", "y": 311833.0}, {"t": "2026-08-21T23:32:53.907839+00:00", "y": 312100.0}, {"t": "2026-08-22T01:45:16.038107+00:00", "y": 310029.0}, {"t": "2026-08-22T03:02:40.438664+00:00", "y": 310998.0}, {"t": "2026-08-22T03:53:04.395082+00:00", "y": 310998.0}, {"t": "2026-08-22T04:05:17.747328+00:00", "y": 312299.0}], "buys": [], "sells": []}</script>
 
       <div class="report-row">
         <div class="report"><span class="report-label">Today</span><span class="report-body muted">No closed trades in this window.</span></div>

@@ -294,6 +294,12 @@ if __name__ == "__main__":
     text-transform: uppercase; padding: 4px 10px; border-radius: 999px;
     background: var(--accent-bg); color: var(--accent); margin-left: auto;
   }}
+  .manage-link {{
+    align-self: flex-start; font-size: 0.82rem; color: var(--accent); text-decoration: none;
+    font-weight: 500; display: inline-flex; align-items: center; gap: 4px;
+  }}
+  .manage-link:hover {{ text-decoration: underline; }}
+  .manage-link:focus-visible {{ outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }}
 
   .card {{
     background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
@@ -386,6 +392,10 @@ if __name__ == "__main__":
     </div>
     <span class="mode-badge">{html.escape(cfg.MODE)}</span>
   </div>
+
+  <a class="manage-link" href="https://github.com/Gamaleryani/luno_bot/edit/main/allocations.json" target="_blank" rel="noopener">
+    Manage allocations on GitHub &rarr;
+  </a>
 
   {sections}
 </div>
