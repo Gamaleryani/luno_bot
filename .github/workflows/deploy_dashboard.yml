@@ -24,7 +24,15 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # Explicit ref: main - without this, checkout defaults to the SHA
+      # that triggered the workflow. When called via `uses:` from
+      # trend_4h.yml/range_1h_defensive.yml's "run" job (needs: run), that
+      # pinned SHA predates the "run" job's own commit (the freshly
+      # regenerated dashboard.html) - deploying it silently serves stale
+      # content one run behind. Always deploying HEAD of main fixes this.
       - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Prepare Pages site
         run: |
