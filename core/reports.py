@@ -24,7 +24,17 @@ def compute_window_report(trades: list, starting_balance: float, window_hours: f
     now = _parse_ts(trades[-1]["timestamp"])
     since = now - timedelta(hours=window_hours)
 
-    pre_buy_balance = starting_balance
+    # `known_balance` tracks the last row's balance for BUY/SELL pairing
+    # purposes and starts as None (unknown) - using the current allocation
+    # as a stand-in for "balance before the very first logged row" is wrong
+    # whenever allocation has changed since (e.g. a manual reset), so a
+    # trade we can't honestly compute is skipped rather than mislabeled.
+    # `last_balance`/`last_balance_before_window` are separate: they track
+    # the window's overall net change, which the current allocation IS a
+    # reasonable stand-in for when there's no visibility before all logged
+    # history.
+    known_balance = None
+    pre_buy_balance = None
     last_balance_before_window = starting_balance
     last_balance = starting_balance
     trade_count = 0
@@ -37,16 +47,18 @@ def compute_window_report(trades: list, starting_balance: float, window_hours: f
         in_window = ts >= since
 
         if row["action"] == "BUY":
-            pre_buy_balance = last_balance
+            pre_buy_balance = known_balance
         elif row["action"] == "SELL":
-            if in_window:
+            if in_window and pre_buy_balance is not None:
                 pnl = balance - pre_buy_balance
                 trade_count += 1
                 if pnl > 0:
                     wins += 1
                 else:
                     losses += 1
+            pre_buy_balance = None
 
+        known_balance = balance
         if not in_window:
             last_balance_before_window = balance
         last_balance = balance
