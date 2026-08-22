@@ -44,6 +44,21 @@ class LunoClient:
         r.raise_for_status()
         return r.json().get("candles", [])
 
+    def get_balances(self) -> dict:
+        """Real account balances from Luno, keyed by asset code (e.g. 'MYR',
+        'XBT'). Requires an API key with the 'View balance' permission -
+        this is what the live-mode balance-check safeguard uses to verify
+        the bot's internal tracker matches reality before trading."""
+        if not (self.cfg.LUNO_API_KEY_ID and self.cfg.LUNO_API_SECRET):
+            raise RuntimeError("get_balances requires LUNO_API_KEY_ID / LUNO_API_SECRET to be set.")
+        r = requests.get(
+            f"{BASE_URL}/balance",
+            auth=(self.cfg.LUNO_API_KEY_ID, self.cfg.LUNO_API_SECRET),
+            timeout=10,
+        )
+        r.raise_for_status()
+        return {b["asset"]: b for b in r.json().get("balance", [])}
+
     def place_order(self, pair: str, side: str, volume: float, price: float) -> dict:
         """
         side: 'BID' (buy) or 'ASK' (sell)

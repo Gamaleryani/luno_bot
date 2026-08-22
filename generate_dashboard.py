@@ -18,6 +18,7 @@ from datetime import datetime, timezone
 import config as cfg
 from core.profiles import PROFILES
 from core.reports import compute_window_report
+from core.allocations import load_allocation
 
 STATE_DIR = "state"
 LOG_DIR_ROOT = "logs"
@@ -36,7 +37,7 @@ def load_profile_data(name: str) -> dict:
     log_path = os.path.join(LOG_DIR_ROOT, name, "trade_log.csv")
     price_log_path = os.path.join(LOG_DIR_ROOT, name, "price_log.csv")
 
-    state = {"balance": cfg.STARTING_BALANCE_MYR, "position": None}
+    state = {"balance": load_allocation(name, cfg.STARTING_BALANCE_MYR), "position": None}
     if os.path.exists(state_path):
         with open(state_path) as f:
             state = json.load(f)
@@ -65,8 +66,9 @@ def render_card(name: str, data: dict) -> str:
     label = html.escape(PROFILES[name].get("label", name))
     balance = data["state"]["balance"]
     position = data["state"]["position"]
-    pnl = balance - cfg.STARTING_BALANCE_MYR
-    pnl_pct = (pnl / cfg.STARTING_BALANCE_MYR * 100) if cfg.STARTING_BALANCE_MYR else 0
+    allocation = load_allocation(name, cfg.STARTING_BALANCE_MYR)
+    pnl = balance - allocation
+    pnl_pct = (pnl / allocation * 100) if allocation else 0
     pnl_class = "pos" if pnl >= 0 else "neg"
     regime = regime_of_last_trade(data["trades"])
 
@@ -78,13 +80,14 @@ def render_card(name: str, data: dict) -> str:
         pos_chip = '<span class="chip chip-flat">flat</span>'
         pos_detail = "no open position"
 
+    chip_class = {"BUY": "buy", "SELL": "sell"}
     trade_rows = ""
     for t in reversed(data["trades"][-30:]):
         action = t.get("action", "")
         trade_rows += (
             "<tr>"
             f'<td class="mono muted">{html.escape(t.get("timestamp", ""))}</td>'
-            f'<td><span class="chip chip-{"buy" if action == "BUY" else "sell"}">{html.escape(action)}</span></td>'
+            f'<td><span class="chip chip-{chip_class.get(action, "flat")}">{html.escape(action)}</span></td>'
             f'<td class="mono num">{html.escape(t.get("price", ""))}</td>'
             f'<td class="mono num">{html.escape(t.get("balance", ""))}</td>'
             f'<td class="muted">{html.escape(t.get("regime", ""))}</td>'
@@ -104,8 +107,8 @@ def render_card(name: str, data: dict) -> str:
         )
 
     # --- report panel: today (24h) and this week (7d) ---
-    today = compute_window_report(data["trades"], cfg.STARTING_BALANCE_MYR, 24)
-    week = compute_window_report(data["trades"], cfg.STARTING_BALANCE_MYR, 24 * 7)
+    today = compute_window_report(data["trades"], allocation, 24)
+    week = compute_window_report(data["trades"], allocation, 24 * 7)
 
     def report_html(label_text, r):
         if r["trade_count"] == 0:
@@ -152,6 +155,7 @@ def render_card(name: str, data: dict) -> str:
         <div class="stat">
           <span class="stat-label">Balance</span>
           <span class="mono num stat-value">{balance:,.2f} <span class="unit">MYR</span></span>
+          <span class="mono muted" style="font-size:0.72rem;">allocated: {allocation:,.2f} MYR</span>
         </div>
         <div class="stat">
           <span class="stat-label">Profit / loss</span>
@@ -187,7 +191,7 @@ def render_card(name: str, data: dict) -> str:
 if __name__ == "__main__":
     profile_data = {name: load_profile_data(name) for name in PROFILES}
     total_balance = sum(d["state"]["balance"] for d in profile_data.values())
-    total_start = cfg.STARTING_BALANCE_MYR * len(PROFILES)
+    total_start = sum(load_allocation(name, cfg.STARTING_BALANCE_MYR) for name in PROFILES)
     total_pnl = total_balance - total_start
     total_pnl_pct = (total_pnl / total_start * 100) if total_start else 0
     open_count = sum(1 for d in profile_data.values() if d["state"]["position"])

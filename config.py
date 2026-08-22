@@ -53,9 +53,17 @@ TAKER_FEE_PCT = 0.001
 # --- Notifications & approval gate ---
 # A trade sized at or above this fraction of current balance is "big":
 # it always gets an email notification, and in MODE="live" it additionally
-# requires explicit approval (see core/approval.py, approve_trade.py)
-# before it's ever executed - paper/backtest just notify, never block.
+# requires approval (see core/approval.py, approve_trade.py) before it's
+# executed - paper/backtest just notify, never block.
 BIG_TRADE_ALERT_PCT = 0.30
+
+# If you don't respond within this window, the bot proceeds anyway as long
+# as the trade still checks out (price hasn't moved past tolerance) -
+# fail-OPEN, not fail-closed. 300s = 5 minutes, per explicit request
+# 2026-08-21 - be aware this is a short window to notice a phone
+# notification, evaluate a trade, and respond; a longer value is safer if
+# you'd rather the bot wait for you.
+APPROVAL_TIMEOUT_SECONDS = 300
 
 # --- Starting capital (paper/backtest only) ---
 STARTING_BALANCE_MYR = 50.0

@@ -1,0 +1,47 @@
+name: Check pending trade approvals
+
+# Runs often because the 5-minute approval timeout (config.APPROVAL_TIMEOUT_SECONDS)
+# needs to be caught promptly - the per-profile trading workflows only run
+# hourly/every 4h, far too infrequent. This workflow does nothing unless a
+# profile is in MODE="live" AND has a pending big-trade approval, so it's a
+# cheap no-op the rest of the time (and free either way - GitHub Actions
+# minutes are unlimited for public repos).
+
+on:
+  schedule:
+    - cron: "*/2 * * * *"  # every 2 minutes
+  workflow_dispatch: {}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Check pending approvals
+        env:
+          LUNO_API_KEY_ID: ${{ secrets.LUNO_API_KEY_ID }}
+          LUNO_API_SECRET: ${{ secrets.LUNO_API_SECRET }}
+          EMAIL_SMTP_HOST: ${{ secrets.EMAIL_SMTP_HOST }}
+          EMAIL_SMTP_PORT: ${{ secrets.EMAIL_SMTP_PORT }}
+          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python check_pending_approvals.py
+
+      - name: Commit state if anything executed
+        run: |
+          git config user.name "luno-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add state/
+          git diff --staged --quiet || git commit -m "approval check: trade executed $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          git push
