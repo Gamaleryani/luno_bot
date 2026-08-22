@@ -1,2 +1,3 @@
 timestamp,action,price,balance,regime,reason
 2026-08-20T15:42:03.979930+00:00,BUY,288952.0,28.19,trending,3 bullish / 1 bearish votes (need 3) in trending regime
+2026-08-22T01:23:58.550334+00:00,SELL,312185.0,51.75361904399347,-,take-profit hit: 8.0%
