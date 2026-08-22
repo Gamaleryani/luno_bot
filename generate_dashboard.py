@@ -55,11 +55,26 @@ def load_profile_data(name: str) -> dict:
     return {"state": state, "trades": trades, "prices": prices}
 
 
-def regime_of_last_trade(trades) -> str:
+def last_seen_regime(prices, trades) -> str:
+    """Prefers price_log (updated on EVERY run, including HOLDs) over
+    trade_log (only updated when a trade actually happens) - a strategy
+    that hasn't traded yet still knows the current regime, and showing
+    'unknown' for it is misleading."""
+    for p in reversed(prices):
+        if p.get("regime") and p["regime"] != "-":
+            return p["regime"]
     for t in reversed(trades):
         if t.get("regime") and t["regime"] != "-":
             return t["regime"]
     return "unknown"
+
+
+REAL_TRADE_ACTIONS = {"BUY", "SELL"}
+
+
+def count_real_trades(trades) -> int:
+    """Excludes non-trade audit rows (e.g. RESET) from trade counts."""
+    return sum(1 for t in trades if t.get("action") in REAL_TRADE_ACTIONS)
 
 
 def render_card(name: str, data: dict) -> str:
@@ -70,7 +85,8 @@ def render_card(name: str, data: dict) -> str:
     pnl = balance - allocation
     pnl_pct = (pnl / allocation * 100) if allocation else 0
     pnl_class = "pos" if pnl >= 0 else "neg"
-    regime = regime_of_last_trade(data["trades"])
+    regime = last_seen_regime(data["prices"], data["trades"])
+    real_trade_count = count_real_trades(data["trades"])
 
     if position:
         pos_chip = f'<span class="chip chip-active">position open</span>'
@@ -88,7 +104,7 @@ def render_card(name: str, data: dict) -> str:
             "<tr>"
             f'<td class="mono muted">{html.escape(t.get("timestamp", ""))}</td>'
             f'<td><span class="chip chip-{chip_class.get(action, "flat")}">{html.escape(action)}</span></td>'
-            f'<td class="mono num">{html.escape(t.get("price", ""))}</td>'
+            f'<td class="mono num">{html.escape(t.get("price") or "—")}</td>'
             f'<td class="mono num">{html.escape(t.get("balance", ""))}</td>'
             f'<td class="muted">{html.escape(t.get("regime", ""))}</td>'
             f'<td class="reason">{html.escape(t.get("reason", ""))}</td>'
@@ -167,7 +183,7 @@ def render_card(name: str, data: dict) -> str:
         </div>
         <div class="stat">
           <span class="stat-label">Trades logged</span>
-          <span class="mono num stat-value">{len(data['trades'])}</span>
+          <span class="mono num stat-value">{real_trade_count}</span>
         </div>
       </div>
 
@@ -195,7 +211,7 @@ if __name__ == "__main__":
     total_pnl = total_balance - total_start
     total_pnl_pct = (total_pnl / total_start * 100) if total_start else 0
     open_count = sum(1 for d in profile_data.values() if d["state"]["position"])
-    total_trades = sum(len(d["trades"]) for d in profile_data.values())
+    total_trades = sum(count_real_trades(d["trades"]) for d in profile_data.values())
 
     sections = "".join(render_card(name, profile_data[name]) for name in PROFILES)
     summary_class = "pos" if total_pnl >= 0 else "neg"
