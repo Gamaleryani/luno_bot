@@ -10,15 +10,37 @@ import os
 from datetime import datetime, timezone
 
 
+TRADE_LOG_FIELDS = ["timestamp", "action", "price", "balance", "regime", "reason"]
+
+
+def _needs_header(path: str) -> bool:
+    """True if the file doesn't exist, is empty, or its first line isn't
+    the expected header - guards against a repeat of a real incident
+    (2026-08-22ish) where a file got rewritten headerless, silently
+    corrupting every downstream read (csv.DictReader treated the first
+    DATA row as the header, so e.g. row["timestamp"] raised KeyError)."""
+    if not os.path.exists(path) or os.path.getsize(path) == 0:
+        return True
+    with open(path, newline="") as f:
+        first_line = f.readline().strip()
+    return first_line != ",".join(TRADE_LOG_FIELDS)
+
+
 def log_event(log_dir: str, event: dict):
     os.makedirs(log_dir, exist_ok=True)
     path = os.path.join(log_dir, "trade_log.csv")
-    is_new = not os.path.exists(path)
+    write_header = _needs_header(path)
+    if write_header and os.path.exists(path) and os.path.getsize(path) > 0:
+        # existing rows but a missing/wrong header - prepend the correct
+        # one rather than silently dropping the first row like a naive fix
+        with open(path, newline="") as f:
+            existing = f.read()
+        with open(path, "w", newline="") as f:
+            f.write(",".join(TRADE_LOG_FIELDS) + "\n" + existing)
+        write_header = False
     with open(path, "a", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=[
-            "timestamp", "action", "price", "balance", "regime", "reason"
-        ])
-        if is_new:
+        writer = csv.DictWriter(f, fieldnames=TRADE_LOG_FIELDS)
+        if write_header:
             writer.writeheader()
         writer.writerow({
             "timestamp": event.get("timestamp", datetime.now(timezone.utc).isoformat()),

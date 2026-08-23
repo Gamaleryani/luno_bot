@@ -54,8 +54,10 @@ def compute_window_report(trades: list, starting_balance: float, window_hours: f
                 trade_count += 1
                 if pnl > 0:
                     wins += 1
-                else:
+                elif pnl < 0:
                     losses += 1
+                # pnl == 0 (breakeven) counts toward trade_count but neither
+                # bucket - calling it a "loss" would be misleading
             pre_buy_balance = None
 
         known_balance = balance

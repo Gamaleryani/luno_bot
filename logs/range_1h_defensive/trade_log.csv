@@ -1,1 +1,4 @@
+timestamp,action,price,balance,regime,reason
 2026-08-22T04:04:14.000000+00:00,RESET,,100.0,-,manual test reset - allocation bumped to RM100 for testing the balance-check/allocation features
+2026-08-23T15:59:32.698800+00:00,BUY,309562.0,90.0,-,MANUAL: user-issued BUY command
+2026-08-23T15:59:58.337589+00:00,SELL,309562.0,100.0,-,MANUAL: user-issued SELL command

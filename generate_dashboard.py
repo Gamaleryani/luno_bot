@@ -310,8 +310,9 @@ if __name__ == "__main__":
     text-transform: uppercase; padding: 4px 10px; border-radius: 999px;
     background: var(--accent-bg); color: var(--accent); margin-left: auto;
   }}
+  .link-row {{ display: flex; flex-wrap: wrap; gap: 8px 20px; align-self: flex-start; }}
   .manage-link {{
-    align-self: flex-start; font-size: 0.82rem; color: var(--accent); text-decoration: none;
+    font-size: 0.82rem; color: var(--accent); text-decoration: none;
     font-weight: 500; display: inline-flex; align-items: center; gap: 4px;
   }}
   .manage-link:hover {{ text-decoration: underline; }}
@@ -409,9 +410,17 @@ if __name__ == "__main__":
     <span class="mode-badge">{html.escape(cfg.MODE)}</span>
   </div>
 
-  <a class="manage-link" href="https://github.com/Gamaleryani/luno_bot/edit/main/allocations.json" target="_blank" rel="noopener">
-    Manage allocations on GitHub &rarr;
-  </a>
+  <div class="link-row">
+    <a class="manage-link" href="https://github.com/Gamaleryani/luno_bot/edit/main/allocations.json" target="_blank" rel="noopener">
+      Manage allocations &rarr;
+    </a>
+    <a class="manage-link" href="https://github.com/Gamaleryani/luno_bot/actions/workflows/manual_command.yml" target="_blank" rel="noopener">
+      Manual command (query / buy / sell) &rarr;
+    </a>
+    <a class="manage-link" href="https://github.com/Gamaleryani/luno_bot/actions/workflows/respond_approval.yml" target="_blank" rel="noopener">
+      Respond to a pending approval &rarr;
+    </a>
+  </div>
 
   {sections}
 </div>

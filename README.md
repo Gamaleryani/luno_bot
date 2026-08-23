@@ -74,15 +74,41 @@ flagged `[BIG TRADE]` in the subject line.
 
 ## Approval gate for big live trades
 Paper/backtest never risk real money, so they just notify. In `MODE="live"`,
-a trade at or above `BIG_TRADE_ALERT_PCT` is **not executed automatically** —
-the bot emails you the proposed trade and waits. Nothing happens until you run:
+a trade at or above `BIG_TRADE_ALERT_PCT` is queued and you're notified
+(email + push) — then one of three things happens:
+1. You respond via the **"Respond to a pending approval"** link on the
+   dashboard (a GitHub Actions form, works from your phone) — approve to
+   execute now, or reject to cancel it outright.
+2. You do nothing for `APPROVAL_TIMEOUT_SECONDS` (5 min by default) — it
+   executes automatically anyway, as long as the trade still checks out
+   (price hasn't moved past tolerance). This is a **deliberate fail-open**
+   design (chosen so a missed notification doesn't mean a missed
+   opportunity) — see `core/approval.py` for the full reasoning. Adjust the
+   timeout in `config.py` if 5 minutes feels too short.
+3. The market moves past tolerance before either happens — the stale
+   proposal is dropped, never executed blindly.
+
+This only activates once a profile's `MODE` is `"live"`; it's inert in
+paper/backtest (paper trades just notify, never queue or block).
+
+## Manual command interface
+Query market state or issue a manual BUY/SELL for a profile, checked
+against the same risk rules as the automated bot (position sizing caps,
+balance checks) and logged like any other trade (tagged `MANUAL:` in the
+reason column). Use the **"Manual command"** link on the dashboard — a
+GitHub Actions form, works from your phone, no terminal needed:
 ```
-python approve_trade.py trend_4h
+QUERY trend_4h
+BUY trend_4h 20
+SELL range_1h_defensive
 ```
-The approval only fires if the bot still wants to make almost exactly that trade
-on its next run (price within 1%) — if the market moved on, the stale proposal is
-dropped and a fresh one queued, never executed blindly. This only activates once
-a profile's `MODE` is `"live"`; it's inert in paper/backtest.
+This is deliberately a GitHub Actions form, not a text box on the
+dashboard itself — the dashboard is a public static page, and a control
+that can execute real trades can't safely hold write credentials in
+client-side JS that anyone visiting the site could read. The GitHub form
+reuses your own login as the security boundary instead. A manual command
+never goes through the approval queue above — typing an authenticated
+command already **is** the approval.
 
 ## News awareness (notification-only, NOT a trading strategy)
 ```
