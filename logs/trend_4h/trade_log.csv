@@ -4,3 +4,4 @@ timestamp,action,price,balance,regime,reason
 2026-08-22T04:04:14.000000+00:00,RESET,,100.0,-,manual test reset - balance and open position cleared, allocation bumped to RM100 for testing the balance-check/allocation features
 2026-08-22T08:34:12.069881+00:00,BUY,310496.0,59.21,trending,3 bullish / 0 bearish votes (need 3) in trending regime
 2026-08-24T04:19:49.265463+00:00,BUY,309579.0,54.21,-,MANUAL: user-issued BUY command (added to existing position)
+2026-08-24T04:26:26.097862+00:00,BUY,309579.0,34.21,-,MANUAL: user-issued BUY command (added to existing position)
