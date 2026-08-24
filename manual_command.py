@@ -19,8 +19,13 @@ their notification for awareness, they just aren't held.
 
 Commands:
     QUERY <profile>
-    BUY <profile> <amount_myr>
-    SELL <profile>
+    BUY <profile> <amount_myr>   - opens a new position, or ADDS to an
+                                   existing one if already holding (the
+                                   entry price becomes the size-weighted
+                                   average of both buys, so stop-loss/
+                                   take-profit apply against that average)
+    SELL <profile>                - closes the entire position, however it
+                                     was built up (one buy or several)
 
 Usage:
     python manual_command.py "QUERY trend_4h"
@@ -56,9 +61,7 @@ def run_query(client, profile_name, profile_label, balance, position, allocation
 
 
 def run_buy(client, profile_name, profile_label, log_dir, balance, position, amount_myr, price):
-    if position is not None:
-        print(f"REFUSED: {profile_label} already holds a position. Sell it first.")
-        return balance, position
+    adding_to_position = position is not None
 
     if amount_myr <= 0:
         print("REFUSED: amount must be positive.")
@@ -82,15 +85,32 @@ def run_buy(client, profile_name, profile_label, log_dir, balance, position, amo
     size_units = amount_myr / price
     client.place_order(cfg.PAIR, "BID", size_units, price)
     new_balance = balance - amount_myr
-    new_position = {"entry_price": price, "size_myr": amount_myr, "size_units": size_units,
-                     "entry_timestamp": time.time()}
-    reason = "MANUAL: user-issued BUY command"
+
+    if adding_to_position:
+        total_units = position["size_units"] + size_units
+        total_myr = position["size_myr"] + amount_myr
+        new_position = {
+            "entry_price": total_myr / total_units,  # weighted-average cost basis -
+            "size_myr": total_myr,                    # stop-loss/take-profit now apply
+            "size_units": total_units,                 # against this average, not the
+            "entry_timestamp": position["entry_timestamp"],  # original entry alone
+        }
+        reason = "MANUAL: user-issued BUY command (added to existing position)"
+        print(f"ADDED {size_units:.8f} XBT @ {price:.2f} ({amount_myr:.2f} MYR) to existing position. "
+              f"New average entry: {new_position['entry_price']:.2f}, "
+              f"total held: {total_units:.8f} XBT ({total_myr:.2f} MYR). "
+              f"New balance: {new_balance:.2f} MYR.")
+    else:
+        new_position = {"entry_price": price, "size_myr": amount_myr, "size_units": size_units,
+                         "entry_timestamp": time.time()}
+        reason = "MANUAL: user-issued BUY command"
+        print(f"BOUGHT {size_units:.8f} XBT @ {price:.2f} ({amount_myr:.2f} MYR). "
+              f"New balance: {new_balance:.2f} MYR.")
+
     logger.log_event(log_dir, {"action": "BUY", "price": price, "balance": new_balance,
                                 "regime": "-", "reason": reason})
     notifier.trade_notification(profile_label, "BUY", price, amount_myr, new_balance, reason,
                                  is_big_trade(amount_myr, balance))
-    print(f"BOUGHT {size_units:.8f} XBT @ {price:.2f} ({amount_myr:.2f} MYR). "
-          f"New balance: {new_balance:.2f} MYR.")
     return new_balance, new_position
 
 

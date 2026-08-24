@@ -102,6 +102,12 @@ QUERY trend_4h
 BUY trend_4h 20
 SELL range_1h_defensive
 ```
+`BUY` on a profile that's already holding **adds to the position** instead
+of refusing — the entry price becomes the size-weighted average of both
+buys (so stop-loss/take-profit apply against that average, not the
+original entry alone). `SELL` always closes the whole position at once,
+however it was built up.
+
 This is deliberately a GitHub Actions form, not a text box on the
 dashboard itself — the dashboard is a public static page, and a control
 that can execute real trades can't safely hold write credentials in
