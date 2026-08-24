@@ -1,4 +1,9 @@
 {
-  "balance": 100.0,
-  "position": null
+  "balance": 50.0,
+  "position": {
+    "entry_price": 309579.0,
+    "size_myr": 50.0,
+    "size_units": 0.00016150966312314467,
+    "entry_timestamp": 1787545377.012075
+  }
 }
