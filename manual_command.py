@@ -18,19 +18,36 @@ would be circular. Big manual trades still get flagged "[BIG TRADE]" in
 their notification for awareness, they just aren't held.
 
 Commands:
-    QUERY <profile>
-    BUY <profile> <amount_myr>   - opens a new position, or ADDS to an
-                                   existing one if already holding (the
-                                   entry price becomes the size-weighted
-                                   average of both buys, so stop-loss/
-                                   take-profit apply against that average)
-    SELL <profile>                - closes the entire position, however it
-                                     was built up (one buy or several)
+    QUERY <profile>                - shows price, regime, balance,
+                                      position, and whether HOLD is active
+    BUY <profile> <amount_myr>     - opens a new position, or ADDS to an
+                                      existing one if already holding (the
+                                      entry price becomes the size-weighted
+                                      average of both buys, so stop-loss/
+                                      take-profit apply against that average)
+    SELL <profile>                 - closes the entire position, however it
+                                      was built up (one buy or several).
+                                      Also turns off HOLD if it was on.
+    HOLD <profile>                 - tells the AUTOMATED bot to stop
+                                      managing this position: skips its own
+                                      stop-loss/take-profit check and its
+                                      own SELL decision entirely, every run,
+                                      until you SELL or RESUME. This means
+                                      NO automatic loss protection while
+                                      it's on - a deliberate trade-off you're
+                                      choosing, not a default. Only makes
+                                      sense with an open position.
+    RESUME <profile>               - turns HOLD back off, returning the
+                                      position to normal automated
+                                      management (stop-loss/take-profit and
+                                      strategy SELL signals apply again)
 
 Usage:
     python manual_command.py "QUERY trend_4h"
     python manual_command.py "BUY trend_4h 20"
     python manual_command.py "SELL trend_4h"
+    python manual_command.py "HOLD trend_4h"
+    python manual_command.py "RESUME trend_4h"
 """
 
 import sys
@@ -43,7 +60,7 @@ from core.profiles import apply_profile, PROFILES
 from main import fetch_recent_df, is_big_trade, check_real_balance
 
 
-def run_query(client, profile_name, profile_label, balance, position, allocation):
+def run_query(client, profile_name, profile_label, balance, position, allocation, manual_hold):
     df = fetch_recent_df(client)
     df = indicators.compute_all(df, cfg)
     row = df.iloc[-1]
@@ -56,6 +73,7 @@ def run_query(client, profile_name, profile_label, balance, position, allocation
     if position:
         print(f"Position: {position['size_units']:.8f} XBT @ {position['entry_price']:.2f} "
               f"({position['size_myr']:.2f} MYR)")
+        print(f"Manual hold: {'ON - automated exits disabled' if manual_hold else 'off (normal)'}")
     else:
         print("Position: none (flat)")
 
@@ -132,9 +150,26 @@ def run_sell(client, profile_label, log_dir, balance, position, price):
     return new_balance, None
 
 
+def run_hold(profile_name, profile_label, position):
+    if position is None:
+        print(f"REFUSED: {profile_label} is flat - nothing to hold.")
+        return False
+    print(f"HOLD ON for {profile_label}: the automated bot will skip its own stop-loss/"
+          f"take-profit check and SELL decisions for this position every run until you "
+          f"run SELL {profile_name} or RESUME {profile_name}. "
+          f"No automatic loss protection while this is on.")
+    return True
+
+
+def run_resume(profile_name, profile_label):
+    print(f"HOLD OFF for {profile_label}: normal automated management (stop-loss/"
+          f"take-profit, strategy SELL signals) resumes on the next run.")
+    return False
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print('Usage: python manual_command.py "QUERY|BUY|SELL <profile> [amount]"')
+        print('Usage: python manual_command.py "QUERY|BUY|SELL|HOLD|RESUME <profile> [amount]"')
         sys.exit(1)
 
     parts = sys.argv[1].strip().split()
@@ -150,7 +185,7 @@ if __name__ == "__main__":
     paths = apply_profile(cfg, profile_name)
     allocation = allocations.load_allocation(profile_name, cfg.STARTING_BALANCE_MYR)
     st = state_mod.load_state(paths["state_file"], allocation)
-    balance, position = st["balance"], st["position"]
+    balance, position, manual_hold = st["balance"], st["position"], st["manual_hold"]
 
     client = LunoClient(cfg)
     df = fetch_recent_df(client)
@@ -158,7 +193,7 @@ if __name__ == "__main__":
     price = df.iloc[-1]["close"]
 
     if action == "QUERY":
-        run_query(client, profile_name, paths["label"], balance, position, allocation)
+        run_query(client, profile_name, paths["label"], balance, position, allocation, manual_hold)
     elif action == "BUY":
         if len(parts) != 3:
             print("Usage: BUY <profile> <amount_myr>")
@@ -166,10 +201,17 @@ if __name__ == "__main__":
         amount = float(parts[2])
         balance, position = run_buy(client, profile_name, paths["label"], paths["log_dir"],
                                      balance, position, amount, price)
-        state_mod.save_state(paths["state_file"], balance, position)
+        state_mod.save_state(paths["state_file"], balance, position, manual_hold)
     elif action == "SELL":
         balance, position = run_sell(client, paths["label"], paths["log_dir"], balance, position, price)
-        state_mod.save_state(paths["state_file"], balance, position)
+        manual_hold = False  # nothing left to hold once the position is closed
+        state_mod.save_state(paths["state_file"], balance, position, manual_hold)
+    elif action == "HOLD":
+        manual_hold = run_hold(profile_name, paths["label"], position)
+        state_mod.save_state(paths["state_file"], balance, position, manual_hold)
+    elif action == "RESUME":
+        manual_hold = run_resume(profile_name, paths["label"])
+        state_mod.save_state(paths["state_file"], balance, position, manual_hold)
     else:
-        print(f"Unknown action '{action}'. Use QUERY, BUY, or SELL.")
+        print(f"Unknown action '{action}'. Use QUERY, BUY, SELL, HOLD, or RESUME.")
         sys.exit(1)

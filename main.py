@@ -165,12 +165,22 @@ def _sell(client, profile_name, profile_label, log_dir, approval_dir, balance, p
 
 
 def run_once(client: LunoClient, profile_name: str, profile_label: str,
-             log_dir: str, approval_dir: str, balance: float, position):
+             log_dir: str, approval_dir: str, balance: float, position,
+             manual_hold: bool = False):
     df = fetch_recent_df(client)
     df = indicators.compute_all(df, cfg)
     i = len(df) - 1
     row = df.iloc[i]
     price = row["close"]
+
+    if manual_hold and position is not None:
+        # user-set override (manual_command.py HOLD) - skip both the
+        # stop-loss/take-profit check and the strategy's own SELL decision
+        # entirely. No automatic loss protection while this is on.
+        logger.log_price(log_dir, price, "-", balance)
+        print(f"[HOLD ACTIVE] skipping automated exit checks for {profile_label} "
+              f"- use 'SELL {profile_name}' or 'RESUME {profile_name}' to change this.")
+        return balance, position
 
     # 1. manage any open position first (stop-loss / take-profit)
     if position is not None:
@@ -208,9 +218,10 @@ if __name__ == "__main__":
     st = state_mod.load_state(paths["state_file"], allocation)
 
     print(f"Starting in MODE={cfg.MODE} on pair={cfg.PAIR} profile={args.profile} ({paths['label']}), "
-          f"allocation={allocation:.2f} MYR")
+          f"allocation={allocation:.2f} MYR" + (", MANUAL HOLD ACTIVE" if st["manual_hold"] else ""))
     client = LunoClient(cfg)
     balance, position = run_once(client, args.profile, paths["label"], paths["log_dir"],
-                                  f"state/{args.profile}", st["balance"], st["position"])
-    state_mod.save_state(paths["state_file"], balance, position)
+                                  f"state/{args.profile}", st["balance"], st["position"],
+                                  st["manual_hold"])
+    state_mod.save_state(paths["state_file"], balance, position, st["manual_hold"])
     print(f"Done. Balance={balance:.2f} Position={position}")

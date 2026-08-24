@@ -88,6 +88,8 @@ def render_card(name: str, data: dict) -> str:
     regime = last_seen_regime(data["prices"], data["trades"])
     real_trade_count = count_real_trades(data["trades"])
 
+    manual_hold = data["state"].get("manual_hold", False)
+
     if position:
         pos_chip = f'<span class="chip chip-active">position open</span>'
         pos_detail = (f"{position['size_units']:.8f} XBT @ {position['entry_price']:,.2f} "
@@ -95,6 +97,14 @@ def render_card(name: str, data: dict) -> str:
     else:
         pos_chip = '<span class="chip chip-flat">flat</span>'
         pos_detail = "no open position"
+
+    hold_banner = ""
+    if manual_hold and position:
+        hold_banner = (
+            '<div class="hold-banner">MANUAL HOLD ACTIVE &mdash; the automated bot is NOT '
+            "managing this position: no stop-loss, no take-profit, no strategy SELL signal "
+            "will fire. Only a manual SELL or RESUME command changes this.</div>"
+        )
 
     chip_class = {"BUY": "buy", "SELL": "sell"}
     trade_rows = ""
@@ -187,6 +197,7 @@ def render_card(name: str, data: dict) -> str:
         </div>
       </div>
 
+      {hold_banner}
       {chart_html}
 
       <div class="report-row">
@@ -350,6 +361,12 @@ if __name__ == "__main__":
   .unit {{ font-size: 0.75rem; font-weight: 500; color: var(--muted); }}
   .pos {{ color: var(--pos); }}
   .neg {{ color: var(--neg); }}
+
+  .hold-banner {{
+    background: var(--neg-bg); color: var(--neg); border-radius: 10px;
+    padding: 10px 14px; font-size: 0.82rem; font-weight: 500; margin-bottom: 14px;
+    line-height: 1.4;
+  }}
 
   .chart-wrap {{ margin: 4px 0 18px; }}
   .chart-empty {{
