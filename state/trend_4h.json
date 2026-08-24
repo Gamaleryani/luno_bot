@@ -1,10 +1,5 @@
 {
-  "balance": 34.21,
-  "position": {
-    "entry_price": 310146.9035644128,
-    "size_myr": 65.78999999999999,
-    "size_units": 0.00021212528399896282,
-    "entry_timestamp": 1787387652.0698256
-  },
+  "balance": 101.71653825454594,
+  "position": null,
   "manual_hold": false
 }
