@@ -25,23 +25,36 @@
 - `approve_trade.py` — approves a pending big live trade
 - `generate_dashboard.py` — renders `dashboard.html` from current state + logs
 
-## Status (2026-08-20)
-Backtested extensively against real XBTMYR history (30d–2.7yr, multiple candle
-durations, 15 variants, all compared against a buy-and-hold benchmark — not just
-raw returns, since much of a "profit" over the last 2 years was just Bitcoin's own
-rise). Two profiles came out as the only configs that consistently beat
-buy-and-hold across multiple time windows, and are now running in **paper mode**:
+## Status (2026-08-25)
+Backtested extensively against real historical data (30d–2.7yr, multiple candle
+durations, 15 variants per pair, all compared against a buy-and-hold benchmark —
+not just raw returns, since much of a "profit" can just be the asset's own price
+rise/fall). Three profiles have survived this process and are running in
+**paper mode**, across two different pairs — a strategy validated on one coin
+is NOT assumed to transfer to another; each was backtested on its own pair's
+real history before being added:
 
+**XBTMYR (Bitcoin):**
 - **`trend_4h`** — 4h candles, 5%/8% stop-loss/take-profit. Swing-trading style,
   ~4.7 day average hold. Beats buy-and-hold when the market trends.
 - **`range_1h_defensive`** — 1h candles, ranging-regime-only, 2%/3% stop/take-profit.
   ~1-3 day average hold. The only config that stayed profitable through a falling
   market (1-year window where buy-and-hold lost -40.67%, this made +2.59%).
 
-Neither is proven — 1-3 years of one asset's history is still a small sample — but
-both are the strongest evidence-backed candidates found so far. Daily candles were
-also tested (per a "shorter, few-day hold" request) and rejected: every daily-candle
-variant underperformed simply holding, sometimes badly.
+**ETHMYR (Ethereum):**
+- **`eth_range_4h`** — 4h candles, ranging-regime-only, 2-of-4 signal agreement
+  (config.py's default 3%/5% stop/take-profit, unchanged). Validated across both
+  a 1-year and 2-year window where ETH itself was down -49% and -17%
+  respectively — this was the only variant that stayed profitable in absolute
+  terms in both, beating buy-and-hold by 50%+ and 26%+. Same "mean-reversion
+  over trend-following" pattern as `range_1h_defensive` found independently
+  for Bitcoin — worth noting if adding more pairs later.
+
+None of these are proven — 1-3 years of one asset's history is still a small
+sample — but they're the strongest evidence-backed candidates found so far.
+Daily candles were also tested for BTC (per a "shorter, few-day hold" request)
+and rejected: every daily-candle variant underperformed simply holding,
+sometimes badly.
 
 **Fee accounting fixed 2026-08-24**: `main.py` (automated) and
 `manual_command.py` (manual BUY/SELL) now both deduct `TAKER_FEE_PCT` on
@@ -188,6 +201,26 @@ your phone, no manual refresh needed.
    to an API key with **trade permission** (still no withdrawal).
 3. Start with small real capital. The approval gate above will hold for any
    trade over 30% of balance until you explicitly confirm it.
+
+## Adding another trading pair
+Don't just copy an existing profile's settings onto a new pair - a
+strategy tuned for one coin's volatility isn't assumed to work for
+another (see `eth_range_4h`'s docstring in `core/profiles.py` for why it
+uses different settings than the BTC profiles). The process each time:
+1. `python data/fetch_history.py --pair <PAIR> --days <N> --duration <secs> --out data/<name>.csv`
+   for at least two different window lengths (e.g. 1yr and 2yr).
+2. `python strategy_compare.py data/<name>.csv` on each window - look for a
+   variant that beats the buy-and-hold benchmark consistently across
+   windows with a real trade count (not a 2-trade fluke), same rigor as
+   `strategy_compare.py`'s own output history in this repo's commits.
+3. Add a new entry to `core/profiles.py`'s `PROFILES` dict with that
+   variant's settings plus `"PAIR": "<PAIR>"`, and a `schedule` matching a
+   new cron.
+4. Add the profile to `allocations.json`, copy `.github/workflows/range_1h_defensive.yml`
+   as a template for the new workflow (swap the profile name and cron),
+   and add the profile name to `respond_approval.yml`'s choice list.
+5. The dashboard, manual command interface, and approval gate all pick up
+   any profile in `PROFILES` automatically - no other code changes needed.
 
 ## Weekly review loop
 `core/logger.summarize_performance()` gives a plain-English performance summary.

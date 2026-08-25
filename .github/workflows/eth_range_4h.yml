@@ -1,0 +1,59 @@
+name: Luno Bot - eth_range_4h
+
+on:
+  schedule:
+    - cron: "20 */4 * * *"  # every 4 hours, 20 min past the hour
+  workflow_dispatch: {}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Run bot cycle
+        env:
+          LUNO_API_KEY_ID: ${{ secrets.LUNO_API_KEY_ID }}
+          LUNO_API_SECRET: ${{ secrets.LUNO_API_SECRET }}
+          EMAIL_SMTP_HOST: ${{ secrets.EMAIL_SMTP_HOST }}
+          EMAIL_SMTP_PORT: ${{ secrets.EMAIL_SMTP_PORT }}
+          EMAIL_USERNAME: ${{ secrets.EMAIL_USERNAME }}
+          EMAIL_APP_PASSWORD: ${{ secrets.EMAIL_APP_PASSWORD }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python main.py --profile eth_range_4h
+
+      - name: Regenerate dashboard
+        run: python generate_dashboard.py
+
+      - name: Commit updated state/logs/dashboard
+        run: |
+          git config user.name "luno-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add state/ logs/ dashboard.html
+          git diff --staged --quiet && exit 0
+          git commit -m "eth_range_4h run $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          for i in 1 2 3 4 5; do
+            git push && exit 0
+            git fetch origin main
+            git rebase origin/main
+            sleep 3
+          done
+          echo "::error::Failed to push after 5 retries"
+          exit 1
+
+  deploy-dashboard:
+    needs: run
+    uses: ./.github/workflows/deploy_dashboard.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write

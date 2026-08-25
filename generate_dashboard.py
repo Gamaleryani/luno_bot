@@ -226,6 +226,7 @@ if __name__ == "__main__":
 
     sections = "".join(render_card(name, profile_data[name]) for name in PROFILES)
     summary_class = "pos" if total_pnl >= 0 else "neg"
+    pairs_traded = sorted({PROFILES[name].get("PAIR", cfg.PAIR) for name in PROFILES})
 
     html_doc = f"""<title>Luno Bot Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -401,9 +402,9 @@ if __name__ == "__main__":
 </style>
 <div class="page">
   <div class="masthead">
-    <span class="eyebrow">{html.escape(cfg.PAIR)} &middot; paper mode</span>
+    <span class="eyebrow">{html.escape(" / ".join(pairs_traded))} &middot; paper mode</span>
     <h1>Luno Bot Dashboard</h1>
-    <span class="subtitle">Two strategies running in parallel against real live prices, no real capital at risk.</span>
+    <span class="subtitle">{len(PROFILES)} strategies running in parallel against real live prices, no real capital at risk.</span>
     <span class="subtitle mono">Data as of this page's last bot run: {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")}</span>
   </div>
 

@@ -4,9 +4,12 @@ against the same account without stepping on each other's logs/state.
 Each profile overrides a few attributes on the shared `config` module and
 gets its own log directory and state file.
 
-Chosen from backtest comparison (see strategy_compare.py output,
-2026-08-20): these two were the only configs that consistently beat a
-buy-and-hold benchmark across multiple historical windows.
+Each profile here was chosen from backtest comparison (see
+strategy_compare.py, run against real historical data for that profile's
+own PAIR - a strategy validated on Bitcoin does NOT automatically transfer
+to another coin) - only configs that consistently beat a buy-and-hold
+benchmark across multiple historical windows get added. `PAIR` defaults to
+config.py's XBTMYR if a profile doesn't override it.
 """
 
 PROFILES = {
@@ -26,6 +29,23 @@ PROFILES = {
         "TAKE_PROFIT_PCT": 0.03,
         # matches .github/workflows/range_1h_defensive.yml's cron: "3 * * * *" (UTC)
         "schedule": {"interval_hours": 1, "minute_offset": 3},
+    },
+    "eth_range_4h": {
+        "label": "ETHMYR 4h range-only (min 2 signals)",
+        "PAIR": "ETHMYR",
+        "CANDLE_DURATION": 14400,
+        "ALLOWED_REGIMES": ["ranging"],
+        "MIN_AGREEING_SIGNALS": 2,
+        # STOP_LOSS_PCT/TAKE_PROFIT_PCT intentionally left at config.py's
+        # defaults (3%/5%) - that's what backtested well, both windows.
+        # Validated 2026-08-25 against real ETHMYR history: beat buy-and-hold
+        # by +25-55% across a 1-year AND 2-year window (ETH was actually down
+        # -17% to -49% over these periods - this range/mean-reversion approach
+        # was the only one that stayed profitable in absolute terms, same
+        # pattern as range_1h_defensive found for BTC). See strategy_compare.py
+        # output in conversation history for full numbers before touching this.
+        # matches .github/workflows/eth_range_4h.yml's cron: "20 */4 * * *" (UTC)
+        "schedule": {"interval_hours": 4, "minute_offset": 20},
     },
 }
 
