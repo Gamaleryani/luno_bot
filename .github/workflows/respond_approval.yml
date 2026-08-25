@@ -11,6 +11,7 @@ on:
           - trend_4h
           - range_1h_defensive
           - eth_range_4h
+          - sol_range_1h
       decision:
         description: "Approve executes it now; reject cancels it outright"
         required: true

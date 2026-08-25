@@ -47,6 +47,26 @@ PROFILES = {
         # matches .github/workflows/eth_range_4h.yml's cron: "20 */4 * * *" (UTC)
         "schedule": {"interval_hours": 4, "minute_offset": 20},
     },
+    "sol_range_1h": {
+        "label": "SOLMYR 1h range-only tight exits",
+        "PAIR": "SOLMYR",
+        "CANDLE_DURATION": 3600,
+        "ALLOWED_REGIMES": ["ranging"],
+        "STOP_LOSS_PCT": 0.02,
+        "TAKE_PROFIT_PCT": 0.03,
+        # Same structure as range_1h_defensive (BTC) - turns out to transfer.
+        # Validated 2026-08-25 against real SOLMYR history: positive in BOTH
+        # a 180-day window (+6.23%, SOL was actually UP +15.27% there - this
+        # underperforms buy-and-hold in a rally, as expected for a defensive/
+        # mean-reversion approach) AND a 1-year window (+3.24%, beating
+        # buy-and-hold by +56.63% - SOL was down -53.39% there). LTCMYR was
+        # also tested (4h and 1h, multiple windows) and REJECTED - no variant
+        # showed a consistent sign across windows, the classic curve-fit
+        # signature. Don't re-add LTC without a materially different
+        # approach; see strategy_compare.py output in conversation history.
+        # matches .github/workflows/sol_range_1h.yml's cron: "35 * * * *" (UTC)
+        "schedule": {"interval_hours": 1, "minute_offset": 35},
+    },
 }
 
 

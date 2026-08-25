@@ -29,8 +29,8 @@
 Backtested extensively against real historical data (30d–2.7yr, multiple candle
 durations, 15 variants per pair, all compared against a buy-and-hold benchmark —
 not just raw returns, since much of a "profit" can just be the asset's own price
-rise/fall). Three profiles have survived this process and are running in
-**paper mode**, across two different pairs — a strategy validated on one coin
+rise/fall). Four profiles have survived this process and are running in
+**paper mode**, across three different pairs — a strategy validated on one coin
 is NOT assumed to transfer to another; each was backtested on its own pair's
 real history before being added:
 
@@ -49,6 +49,19 @@ real history before being added:
   terms in both, beating buy-and-hold by 50%+ and 26%+. Same "mean-reversion
   over trend-following" pattern as `range_1h_defensive` found independently
   for Bitcoin — worth noting if adding more pairs later.
+
+**SOLMYR (Solana):**
+- **`sol_range_1h`** — same structure as `range_1h_defensive` (1h candles,
+  ranging-regime-only, 2%/3% stop/take-profit) - turned out to transfer.
+  Positive in both a 180-day window (+6.23%, though SOL itself rallied
+  +15.27% there so this trails buy-and-hold, as expected for a defensive
+  strategy in a rally) and a 1-year window (+3.24%, beating buy-and-hold by
+  +56.63% - SOL was down -53% there).
+
+**LTCMYR was tested and rejected** (2026-08-25) — 4h and 1h candles, multiple
+windows, 15 variants each: no configuration showed a consistent sign across
+windows (whatever won in one window lost in another), the classic curve-fit
+signature. Don't re-add it without a materially different approach.
 
 None of these are proven — 1-3 years of one asset's history is still a small
 sample — but they're the strongest evidence-backed candidates found so far.
