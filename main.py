@@ -111,11 +111,12 @@ def _buy(client, profile_name, profile_label, log_dir, approval_dir, balance, si
             print("Real balance check left nothing to trade with - skipping this buy.")
             return balance, None
 
+    fee = size_myr * getattr(cfg, "TAKER_FEE_PCT", 0.0)
     size_units = size_myr / price
     client.place_order(cfg.PAIR, "BID", size_units, price)
     position = {"entry_price": price, "size_myr": size_myr, "size_units": size_units,
                 "entry_timestamp": time.time()}
-    balance -= size_myr
+    balance -= (size_myr + fee)
     logger.log_event(log_dir, {"action": "BUY", "price": price, "balance": balance,
                                 "regime": regime, "reason": reason})
     notifier.trade_notification(profile_label, "BUY", price, size_myr, balance, reason, big)
@@ -157,7 +158,9 @@ def _sell(client, profile_name, profile_label, log_dir, approval_dir, balance, p
 
     client.place_order(cfg.PAIR, "ASK", position["size_units"], price)
     pnl = (price - position["entry_price"]) * position["size_units"]
-    balance += size_myr + pnl
+    proceeds = size_myr + pnl
+    fee = proceeds * getattr(cfg, "TAKER_FEE_PCT", 0.0)
+    balance += (proceeds - fee)
     logger.log_event(log_dir, {"action": "SELL", "price": price, "balance": balance,
                                 "regime": regime, "reason": reason})
     notifier.trade_notification(profile_label, "SELL", price, size_myr, balance, reason, big)

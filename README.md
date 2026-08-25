@@ -43,6 +43,13 @@ both are the strongest evidence-backed candidates found so far. Daily candles we
 also tested (per a "shorter, few-day hold" request) and rejected: every daily-candle
 variant underperformed simply holding, sometimes badly.
 
+**Fee accounting fixed 2026-08-24**: `main.py` (automated) and
+`manual_command.py` (manual BUY/SELL) now both deduct `TAKER_FEE_PCT` on
+every trade leg, matching what `backtest.py` always did. Before this fix,
+every live/paper trade's logged balance was missing the ~0.1%-per-leg fee -
+slightly optimistic. Not retroactively corrected in old log rows (that
+would rewrite history); only trades from this date forward are accurate.
+
 Re-run `strategy_compare.py` against fresh data periodically to sanity-check these
 still hold up; don't assume yesterday's winner stays the winner forever.
 

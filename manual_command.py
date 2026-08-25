@@ -84,8 +84,10 @@ def run_buy(client, profile_name, profile_label, log_dir, balance, position, amo
     if amount_myr <= 0:
         print("REFUSED: amount must be positive.")
         return balance, position
-    if amount_myr > balance:
-        print(f"REFUSED: {amount_myr:.2f} MYR exceeds available balance ({balance:.2f} MYR).")
+    fee_pct = getattr(cfg, "TAKER_FEE_PCT", 0.0)
+    if amount_myr * (1 + fee_pct) > balance:
+        print(f"REFUSED: {amount_myr:.2f} MYR plus the ~{fee_pct*100:.1f}% trading fee exceeds "
+              f"available balance ({balance:.2f} MYR).")
         return balance, position
     max_allowed = balance * cfg.MAX_POSITION_PCT
     if amount_myr > max_allowed:
@@ -100,9 +102,10 @@ def run_buy(client, profile_name, profile_label, log_dir, balance, position, amo
             print("Real balance check left nothing to trade with - refusing.")
             return balance, position
 
+    fee = amount_myr * fee_pct
     size_units = amount_myr / price
     client.place_order(cfg.PAIR, "BID", size_units, price)
-    new_balance = balance - amount_myr
+    new_balance = balance - amount_myr - fee
 
     if adding_to_position:
         total_units = position["size_units"] + size_units
@@ -140,13 +143,16 @@ def run_sell(client, profile_label, log_dir, balance, position, price):
     size_myr = position["size_myr"]
     client.place_order(cfg.PAIR, "ASK", position["size_units"], price)
     pnl = (price - position["entry_price"]) * position["size_units"]
-    new_balance = balance + size_myr + pnl
+    proceeds = size_myr + pnl
+    fee = proceeds * getattr(cfg, "TAKER_FEE_PCT", 0.0)
+    new_balance = balance + proceeds - fee
     reason = "MANUAL: user-issued SELL command"
     logger.log_event(log_dir, {"action": "SELL", "price": price, "balance": new_balance,
                                 "regime": "-", "reason": reason})
     notifier.trade_notification(profile_label, "SELL", price, size_myr, new_balance, reason,
                                  is_big_trade(size_myr, balance))
-    print(f"SOLD @ {price:.2f}. P/L: {pnl:+.2f} MYR. New balance: {new_balance:.2f} MYR.")
+    print(f"SOLD @ {price:.2f}. P/L: {pnl - fee:+.2f} MYR (after {fee:.2f} MYR fee). "
+          f"New balance: {new_balance:.2f} MYR.")
     return new_balance, None
 
 
