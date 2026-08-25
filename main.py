@@ -187,7 +187,8 @@ def run_once(client: LunoClient, profile_name: str, profile_label: str,
 
     # 1. manage any open position first (stop-loss / take-profit)
     if position is not None:
-        exit_check = risk.check_exit(position["entry_price"], price, cfg)
+        exit_check = risk.check_exit(position["entry_price"], price, cfg,
+                                      position.get("entry_timestamp"), time.time())
         if exit_check["exit"]:
             logger.log_price(log_dir, price, "-", balance)
             return _sell(client, profile_name, profile_label, log_dir, approval_dir,

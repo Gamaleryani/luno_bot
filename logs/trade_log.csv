@@ -1318,3 +1318,47 @@ timestamp,action,price,balance,regime,reason
 1787195100.0,SELL,278800.0,31.91858791063946,trending,0 bullish / 3 bearish votes (need 3) in trending regime
 1787201400.0,BUY,279266.0,16.02270791063946,trending,3 bullish / 0 bearish votes (need 3) in trending regime
 1787229900.0,SELL,287663.0,32.36383196999506,trending,0 bullish / 3 bearish votes (need 3) in trending regime
+1767244500.0,BUY,273196.1724554782,25.4755,ranging,3 bullish / 0 bearish votes (need 3) in ranging regime
+1767258600.0,SELL,272873.27378428867,49.922071679534646,trending,0 bullish / 3 bearish votes (need 3) in trending regime
+1767274800.0,BUY,274539.4533328941,25.517691679534646,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767286200.0,SELL,276479.20112960733,50.04539536244087,trending,0 bullish / 3 bearish votes (need 3) in trending regime
+1767291300.0,BUY,280070.7651123208,25.65102536244087,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767301200.0,SELL,280523.63401937304,50.036021766303755,ranging,0 bullish / 3 bearish votes (need 3) in ranging regime
+1767318900.0,BUY,285090.00020422373,25.721731766303755,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767327000.0,SELL,299870.23650468,51.24547581709973,-,take-profit hit: 5.2%
+1767329700.0,BUY,301221.00291193515,26.160415817099732,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767337800.0,SELL,318065.929029241,52.59536348779484,-,take-profit hit: 5.6%
+1767339600.0,BUY,321466.9205950748,27.109903487794842,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767350400.0,SELL,338069.34724074823,53.858031473254634,-,take-profit hit: 5.2%
+1767350700.0,BUY,338654.6633578248,27.671871473254633,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767360900.0,SELL,356627.2479028874,55.19264837301573,-,take-profit hit: 5.3%
+1767362700.0,BUY,357735.0423241495,28.18566837301573,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767372900.0,SELL,377232.0099147423,56.60765868689522,-,take-profit hit: 5.5%
+1767377400.0,BUY,380296.8406407917,29.07014868689522,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767380400.0,SELL,378856.93471514346,56.4485826023485,trending,0 bullish / 3 bearish votes (need 3) in trending regime
+1767403200.0,BUY,371708.44183599047,28.830992602348502,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767417900.0,SELL,375943.05348236754,56.707401665193885,trending,0 bullish / 3 bearish votes (need 3) in trending regime
+1767422700.0,BUY,375666.8310749042,29.139861665193887,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767498900.0,SELL,385732.9220457009,57.38952522505565,trending,0 bullish / 3 bearish votes (need 3) in trending regime
+1767562800.0,BUY,305728.51481194404,29.38154522505565,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767572400.0,SELL,305356.5292643561,57.29955548451089,trending,0 bullish / 3 bearish votes (need 3) in trending regime
+1767577800.0,BUY,309549.2436260021,29.41169548451089,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767581700.0,SELL,306767.3705798453,56.99371217884257,trending,0 bullish / 3 bearish votes (need 3) in trending regime
+1767609900.0,BUY,309009.5542886746,29.145892178842573,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767631500.0,SELL,306652.5006385224,56.72607983619322,trending,0 bullish / 3 bearish votes (need 3) in trending regime
+1767642600.0,BUY,307016.4284196355,29.158539836193224,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767657900.0,SELL,314188.1072382597,57.3136707435642,ranging,1 bullish / 3 bearish votes (need 3) in ranging regime
+1767659100.0,BUY,313328.5473357068,29.215600743564202,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767688200.0,SELL,323161.49180410046,58.13754867624607,trending,0 bullish / 3 bearish votes (need 3) in trending regime
+1767715800.0,BUY,320485.1846468954,29.82926867624607,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767720600.0,SELL,324594.6007838427,58.44324590255883,ranging,1 bullish / 3 bearish votes (need 3) in ranging regime
+1767722400.0,BUY,324840.1253427863,29.77460590255883,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767744600.0,SELL,332761.7271728635,59.08368697841985,ranging,1 bullish / 3 bearish votes (need 3) in ranging regime
+1767754800.0,BUY,335217.01916739484,30.32495697841985,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767760500.0,SELL,333246.91118507576,58.85754639868634,trending,0 bullish / 3 bearish votes (need 3) in trending regime
+1767783600.0,BUY,328219.54550488334,30.09881639868634,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767804900.0,SELL,326758.3274594877,58.672309688785475,trending,0 bullish / 3 bearish votes (need 3) in trending regime
+1767806700.0,BUY,327597.0828743324,30.253919688785473,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767824100.0,SELL,335103.471701401,59.26539283943919,ranging,1 bullish / 3 bearish votes (need 3) in ranging regime
+1767825000.0,BUY,334385.59973796847,30.356512839439187,trending,3 bullish / 0 bearish votes (need 3) in trending regime
+1767825300.0,SELL,333887.4303027085,59.164650288251934,-,backtest ended - closing open position

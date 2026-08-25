@@ -69,6 +69,25 @@ Daily candles were also tested for BTC (per a "shorter, few-day hold" request)
 and rejected: every daily-candle variant underperformed simply holding,
 sometimes badly.
 
+**Also tested and rejected as strategy types (2026-08-25)**:
+- **DCA** (buy a fixed amount on a fixed schedule, no signals) — tested across
+  BTC, ETH, and SOL, multiple windows each (7 tests total). Never once
+  produced a positive absolute return, though it reliably beat lump-sum
+  buy-and-hold by cushioning declines. Real property, wrong tool: it reduces
+  risk, it doesn't generate profit. `dca_backtest.py` still exists if you
+  want to re-check it, but nothing DCA-based is deployed.
+- **Day trading** (forced exit within 12-24h via `core/risk.py`'s
+  `MAX_HOLD_HOURS`, opt-in and unused by any live profile) — tested across
+  BTC, ETH, SOL, multiple windows (16 tests total). Every single one came
+  back negative. Combined with 5-minute candles failing earlier for the same
+  reason, short holding periods appear to systematically lose to fees/noise
+  with this indicator framework - the validated profiles' multi-day holds
+  aren't incidental, they're load-bearing.
+- **"Buy the dip" as a standalone strategy** wasn't separately tested because
+  it's not actually new: `range_1h_defensive`, `eth_range_4h`, and
+  `sol_range_1h` already ARE buy-the-dip strategies at their core (they buy
+  when RSI/Bollinger Bands show oversold conditions during ranging markets).
+
 **Fee accounting fixed 2026-08-24**: `main.py` (automated) and
 `manual_command.py` (manual BUY/SELL) now both deduct `TAKER_FEE_PCT` on
 every trade leg, matching what `backtest.py` always did. Before this fix,
@@ -236,10 +255,25 @@ uses different settings than the BTC profiles). The process each time:
    any profile in `PROFILES` automatically - no other code changes needed.
 
 ## Weekly review loop
-`core/logger.summarize_performance()` gives a plain-English performance summary.
-Bring `logs/<profile>/trade_log.csv` back to a Claude Code session periodically —
-it can analyze what's working, which indicator combos fire before wins vs losses,
-and suggest rule tweaks.
+Two automated, scheduled checks (added 2026-08-25) run without you asking:
+
+- **`weekly_report.py`** (`.github/workflows/weekly_report.yml`, every Monday
+  08:00 UTC) — emails a plain-English digest of actual paper-trading results
+  across every profile: balance, all-time %, and this week's closed-trade
+  P&L. This reports what already happened - it doesn't re-run any backtest.
+- **`revalidate.py`** (`.github/workflows/revalidate.yml`, the 1st and 15th
+  of each month) — re-checks each profile's *own deployed configuration*
+  against the last 90 days of fresh real data, comparing to a buy-and-hold
+  benchmark, and sends an alert if it's now underperforming. This does
+  **not** auto-disable or change anything - a defensive/mean-reversion
+  profile trailing buy-and-hold during a rally is often expected behavior,
+  not proof the edge broke; deciding what (if anything) to do about a flag
+  is a human call, same philosophy as the approval gate.
+
+You can still bring `logs/<profile>/trade_log.csv` back to a Claude Code
+session manually anytime for a deeper look — `core/logger.summarize_performance()`
+gives a plain-English summary, and a session can analyze which indicator
+combos fire before wins vs losses and suggest rule tweaks.
 
 ## Scheduling — runs in the cloud, not on this PC (set up 2026-08-21)
 The bot runs on **GitHub Actions**, not this machine, so it keeps running (and
