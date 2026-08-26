@@ -1,0 +1,2 @@
+timestamp,action,price,balance,regime,reason
+2026-08-26T02:32:06.694162+00:00,BUY,391.07,49.95,-,MANUAL: user-issued BUY command
