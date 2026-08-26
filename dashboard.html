@@ -175,25 +175,25 @@
     <span class="eyebrow">ETHMYR / SOLMYR / XBTMYR &middot; paper mode</span>
     <h1>Luno Bot Dashboard</h1>
     <span class="subtitle">4 strategies running in parallel against real live prices, no real capital at risk.</span>
-    <span class="subtitle mono">Data as of this page's last bot run: 2026-08-26 02:25 UTC</span>
+    <span class="subtitle mono">Data as of this page's last bot run: 2026-08-26 02:27 UTC</span>
   </div>
 
   <div class="summary-bar">
     <div class="summary-stat">
       <span class="stat-label">Combined balance</span>
-      <span class="mono num stat-value">308.16 MYR</span>
+      <span class="mono num stat-value">258.11 MYR</span>
     </div>
     <div class="summary-stat">
       <span class="stat-label">Combined P/L</span>
-      <span class="mono num stat-value neg">-91.84 MYR (-22.96%)</span>
+      <span class="mono num stat-value neg">-141.89 MYR (-35.47%)</span>
     </div>
     <div class="summary-stat">
       <span class="stat-label">Open positions</span>
-      <span class="mono num stat-value">2 / 4</span>
+      <span class="mono num stat-value">3 / 4</span>
     </div>
     <div class="summary-stat">
       <span class="stat-label">Trades logged</span>
-      <span class="mono num stat-value">14</span>
+      <span class="mono num stat-value">15</span>
     </div>
     <span class="mode-badge">paper</span>
   </div>
@@ -324,30 +324,30 @@
           <span class="regime-tag">last seen regime: ranging</span>
           <span class="next-run" data-interval-hours="4" data-minute-offset="20">next check: <span class="mono next-run-text">calculating&hellip;</span></span>
         </div>
-        <span class="chip chip-flat">flat</span>
+        <span class="chip chip-active">position open</span>
       </header>
       <div class="stat-grid">
         <div class="stat">
           <span class="stat-label">Balance</span>
-          <span class="mono num stat-value">100.00 <span class="unit">MYR</span></span>
+          <span class="mono num stat-value">49.95 <span class="unit">MYR</span></span>
           <span class="mono muted" style="font-size:0.72rem;">allocated: 100.00 MYR</span>
         </div>
         <div class="stat">
           <span class="stat-label">Profit / loss</span>
-          <span class="mono num stat-value pos">+0.00 <span class="unit">(+0.00%)</span></span>
+          <span class="mono num stat-value neg">-50.05 <span class="unit">(-50.05%)</span></span>
         </div>
         <div class="stat stat-wide">
           <span class="stat-label">Position</span>
-          <span class="mono stat-value-sm">no open position</span>
+          <span class="mono stat-value-sm">0.00506997 XBT @ 9,862.00 &middot; 50.00 MYR</span>
         </div>
         <div class="stat">
           <span class="stat-label">Trades logged</span>
-          <span class="mono num stat-value">0</span>
+          <span class="mono num stat-value">1</span>
         </div>
       </div>
 
       
-      <div class="chart-wrap"><canvas id="chart-eth_range_4h" height="220"></canvas></div><script type="application/json" class="chart-data" data-chart-id="chart-eth_range_4h">{"price": [{"t": "2026-08-25T10:11:05.940586+00:00", "y": 10004.0}, {"t": "2026-08-25T10:15:44.363232+00:00", "y": 10004.0}, {"t": "2026-08-25T13:12:05.542164+00:00", "y": 10011.0}, {"t": "2026-08-25T16:56:07.036503+00:00", "y": 10001.0}, {"t": "2026-08-25T20:46:55.742398+00:00", "y": 9930.0}, {"t": "2026-08-26T01:59:23.507568+00:00", "y": 9862.0}], "buys": [], "sells": []}</script>
+      <div class="chart-wrap"><canvas id="chart-eth_range_4h" height="220"></canvas></div><script type="application/json" class="chart-data" data-chart-id="chart-eth_range_4h">{"price": [{"t": "2026-08-25T10:11:05.940586+00:00", "y": 10004.0}, {"t": "2026-08-25T10:15:44.363232+00:00", "y": 10004.0}, {"t": "2026-08-25T13:12:05.542164+00:00", "y": 10011.0}, {"t": "2026-08-25T16:56:07.036503+00:00", "y": 10001.0}, {"t": "2026-08-25T20:46:55.742398+00:00", "y": 9930.0}, {"t": "2026-08-26T01:59:23.507568+00:00", "y": 9862.0}], "buys": [{"t": "2026-08-26T02:27:26.371475+00:00", "y": 9862.0}], "sells": []}</script>
 
       <div class="report-row">
         <div class="report"><span class="report-label">Today</span><span class="report-body muted">No closed trades in this window.</span></div>
@@ -357,7 +357,8 @@
       <div class="table-wrap">
         <table>
           <thead><tr><th>Time</th><th>Action</th><th>Price</th><th>Balance</th><th>Regime</th><th>Reason</th></tr></thead>
-          <tbody><tr><td colspan="6" class="empty">No trades logged yet - still watching the market.</td></tr></tbody>
+          <tbody><tr><td class="mono muted">2026-08-26T02:27:26.371475+00:00</td><td><span class="chip chip-buy">BUY</span></td><td class="mono num">9862.0</td><td class="mono num">49.95</td><td class="muted">-</td><td class="reason">MANUAL: user-issued BUY command</td></tr>
+</tbody>
         </table>
       </div>
     </section>
