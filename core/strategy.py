@@ -51,12 +51,12 @@ def _ma_vote(row, prev_row, cfg):
 def _bollinger_vote(row, cfg):
     close, lower, upper = row.get("close"), row.get("bb_lower"), row.get("bb_upper")
     if any(v != v for v in [close, lower, upper]):
-        return 0, "bollinger: no data"
+        return 0, "no data"
     if close <= lower:
         return 1, "price at/below lower Bollinger Band (oversold)"
     if close >= upper:
         return -1, "price at/above upper Bollinger Band (overbought)"
-    return 0, "bollinger: mid-range"
+    return 0, "mid-range, no extreme"
 
 
 def _volume_vote(row, direction_hint, cfg):
