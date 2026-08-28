@@ -70,8 +70,13 @@ def run_query(client, profile_name, profile_label, balance, position, allocation
         f"Price: {row['close']:.2f} MYR",
         f"Regime: {decision['regime']}",
         f"What the bot would decide right now: {decision['action']} ({decision['reason']})",
-        f"Balance: {balance:.2f} MYR (allocated: {allocation:.2f} MYR)",
     ]
+    vote_reasons = decision.get("vote_reasons")
+    if vote_reasons:
+        lines.append("Indicator votes:")
+        for indicator, reason in vote_reasons.items():
+            lines.append(f"  - {indicator}: {reason}")
+    lines.append(f"Balance: {balance:.2f} MYR (allocated: {allocation:.2f} MYR)")
     if position:
         lines.append(f"Position: {position['size_units']:.8f} units @ {position['entry_price']:.2f} "
                       f"({position['size_myr']:.2f} MYR)")
