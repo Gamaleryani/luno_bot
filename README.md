@@ -177,6 +177,10 @@ reuses your own login as the security boundary instead. A manual command
 never goes through the approval queue above — typing an authenticated
 command already **is** the approval.
 
+Every outcome (QUERY's result, a successful or refused BUY/SELL, HOLD/RESUME
+confirmation) is pushed to your phone via ntfy — no need to open the Actions
+log to see what happened.
+
 ## News awareness (notification-only, NOT a trading strategy)
 ```
 python news_check.py

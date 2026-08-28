@@ -65,41 +65,55 @@ def run_query(client, profile_name, profile_label, balance, position, allocation
     df = indicators.compute_all(df, cfg)
     row = df.iloc[-1]
     decision = strategy.evaluate(df, len(df) - 1, cfg)
-    print(f"--- {profile_label} ---")
-    print(f"Price: {row['close']:.2f} MYR")
-    print(f"Regime: {decision['regime']}")
-    print(f"What the bot would decide right now: {decision['action']} ({decision['reason']})")
-    print(f"Balance: {balance:.2f} MYR (allocated: {allocation:.2f} MYR)")
+
+    lines = [
+        f"Price: {row['close']:.2f} MYR",
+        f"Regime: {decision['regime']}",
+        f"What the bot would decide right now: {decision['action']} ({decision['reason']})",
+        f"Balance: {balance:.2f} MYR (allocated: {allocation:.2f} MYR)",
+    ]
     if position:
-        print(f"Position: {position['size_units']:.8f} XBT @ {position['entry_price']:.2f} "
-              f"({position['size_myr']:.2f} MYR)")
-        print(f"Manual hold: {'ON - automated exits disabled' if manual_hold else 'off (normal)'}")
+        lines.append(f"Position: {position['size_units']:.8f} units @ {position['entry_price']:.2f} "
+                      f"({position['size_myr']:.2f} MYR)")
+        lines.append(f"Manual hold: {'ON - automated exits disabled' if manual_hold else 'off (normal)'}")
     else:
-        print("Position: none (flat)")
+        lines.append("Position: none (flat)")
+
+    print(f"--- {profile_label} ---")
+    print("\n".join(lines))
+    notifier.notify_push_only(f"luno_bot [{profile_label}]: QUERY", "\n".join(lines))
 
 
 def run_buy(client, profile_name, profile_label, log_dir, balance, position, amount_myr, price):
     adding_to_position = position is not None
 
     if amount_myr <= 0:
-        print("REFUSED: amount must be positive.")
+        msg = "REFUSED: amount must be positive."
+        print(msg)
+        notifier.notify_push_only(f"luno_bot [{profile_label}]: BUY refused", msg)
         return balance, position
     fee_pct = getattr(cfg, "TAKER_FEE_PCT", 0.0)
     if amount_myr * (1 + fee_pct) > balance:
-        print(f"REFUSED: {amount_myr:.2f} MYR plus the ~{fee_pct*100:.1f}% trading fee exceeds "
-              f"available balance ({balance:.2f} MYR).")
+        msg = (f"REFUSED: {amount_myr:.2f} MYR plus the ~{fee_pct*100:.1f}% trading fee exceeds "
+               f"available balance ({balance:.2f} MYR).")
+        print(msg)
+        notifier.notify_push_only(f"luno_bot [{profile_label}]: BUY refused", msg)
         return balance, position
     max_allowed = balance * cfg.MAX_POSITION_PCT
     if amount_myr > max_allowed:
-        print(f"REFUSED: {amount_myr:.2f} MYR exceeds this profile's max position size "
-              f"({cfg.MAX_POSITION_PCT*100:.0f}% of balance = {max_allowed:.2f} MYR). "
-              f"Resubmit with an amount at or below that, or adjust MAX_POSITION_PCT in config.py.")
+        msg = (f"REFUSED: {amount_myr:.2f} MYR exceeds this profile's max position size "
+               f"({cfg.MAX_POSITION_PCT*100:.0f}% of balance = {max_allowed:.2f} MYR). "
+               f"Resubmit with an amount at or below that, or adjust MAX_POSITION_PCT in config.py.")
+        print(msg)
+        notifier.notify_push_only(f"luno_bot [{profile_label}]: BUY refused", msg)
         return balance, position
 
     if cfg.MODE == "live":
         amount_myr = check_real_balance(client, amount_myr)
         if amount_myr <= 0:
-            print("Real balance check left nothing to trade with - refusing.")
+            msg = "Real balance check left nothing to trade with - refusing."
+            print(msg)
+            notifier.notify_push_only(f"luno_bot [{profile_label}]: BUY refused", msg)
             return balance, position
 
     fee = amount_myr * fee_pct
@@ -137,7 +151,9 @@ def run_buy(client, profile_name, profile_label, log_dir, balance, position, amo
 
 def run_sell(client, profile_label, log_dir, balance, position, price):
     if position is None:
-        print(f"REFUSED: {profile_label} has no open position to sell.")
+        msg = f"REFUSED: {profile_label} has no open position to sell."
+        print(msg)
+        notifier.notify_push_only(f"luno_bot [{profile_label}]: SELL refused", msg)
         return balance, position
 
     size_myr = position["size_myr"]
@@ -158,18 +174,24 @@ def run_sell(client, profile_label, log_dir, balance, position, price):
 
 def run_hold(profile_name, profile_label, position):
     if position is None:
-        print(f"REFUSED: {profile_label} is flat - nothing to hold.")
+        msg = f"REFUSED: {profile_label} is flat - nothing to hold."
+        print(msg)
+        notifier.notify_push_only(f"luno_bot [{profile_label}]: HOLD refused", msg)
         return False
-    print(f"HOLD ON for {profile_label}: the automated bot will skip its own stop-loss/"
-          f"take-profit check and SELL decisions for this position every run until you "
-          f"run SELL {profile_name} or RESUME {profile_name}. "
-          f"No automatic loss protection while this is on.")
+    msg = (f"HOLD ON for {profile_label}: the automated bot will skip its own stop-loss/"
+           f"take-profit check and SELL decisions for this position every run until you "
+           f"run SELL {profile_name} or RESUME {profile_name}. "
+           f"No automatic loss protection while this is on.")
+    print(msg)
+    notifier.notify_push_only(f"luno_bot [{profile_label}]: HOLD ON", msg)
     return True
 
 
 def run_resume(profile_name, profile_label):
-    print(f"HOLD OFF for {profile_label}: normal automated management (stop-loss/"
-          f"take-profit, strategy SELL signals) resumes on the next run.")
+    msg = (f"HOLD OFF for {profile_label}: normal automated management (stop-loss/"
+           f"take-profit, strategy SELL signals) resumes on the next run.")
+    print(msg)
+    notifier.notify_push_only(f"luno_bot [{profile_label}]: HOLD OFF", msg)
     return False
 
 
