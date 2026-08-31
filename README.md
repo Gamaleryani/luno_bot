@@ -8,7 +8,8 @@
 - `core/regime.py` — detects trending vs ranging market
 - `core/strategy.py` — multi-indicator voting logic, regime-aware, news-shock filter,
   optional `ALLOWED_REGIMES` restriction
-- `core/risk.py` — stop-loss, take-profit, volatility-based position sizing
+- `core/risk.py` — stop-loss, take-profit (or opt-in trailing stop via
+  `TRAILING_STOP_PCT`), volatility-based position sizing
 - `core/luno_client.py` — Luno API wrapper (`get_candles` requires an authenticated
   key even for read-only history; paper/backtest never place real orders)
 - `core/logger.py` — trade logging + performance summary generator
@@ -25,11 +26,11 @@
 - `approve_trade.py` — approves a pending big live trade
 - `generate_dashboard.py` — renders `dashboard.html` from current state + logs
 
-## Status (2026-08-25)
+## Status (2026-08-31)
 Backtested extensively against real historical data (30d–2.7yr, multiple candle
-durations, 15 variants per pair, all compared against a buy-and-hold benchmark —
+durations, 15+ variants per pair, all compared against a buy-and-hold benchmark —
 not just raw returns, since much of a "profit" can just be the asset's own price
-rise/fall). Four profiles have survived this process and are running in
+rise/fall). Five profiles have survived this process and are running in
 **paper mode**, across three different pairs — a strategy validated on one coin
 is NOT assumed to transfer to another; each was backtested on its own pair's
 real history before being added:
@@ -57,6 +58,26 @@ real history before being added:
   +15.27% there so this trails buy-and-hold, as expected for a defensive
   strategy in a rally) and a 1-year window (+3.24%, beating buy-and-hold by
   +56.63% - SOL was down -53% there).
+- **`sol_trend_4h`** — added 2026-08-31, this project's first genuinely
+  validated **trend-following** profile (the other four are all
+  defensive/mean-reversion, which trails buy-and-hold during rallies by
+  design). 4h candles, `ALLOWED_REGIMES: ["trending"]`, 2-of-4 signal
+  agreement, and a **trailing stop** (`TRAILING_STOP_PCT: 0.08` in
+  `core/risk.py`) instead of a fixed take-profit - rides a position as long
+  as price keeps making new highs, only exits once price falls 8% back from
+  the peak. Validated on 4h candles across both a 1-year window (+7.86% vs
+  SOL's own -52.34% - beats buy-and-hold by +60.20pp) and the last 180 days
+  (+8.81% vs SOL's own +13.43% rally - trails buy-and-hold by only -4.62pp,
+  far closer than any other profile/variant tested for any pair during the
+  same rally, which all trailed by 15-30pp). Swept the trailing-stop % from
+  4-12%: positive and consistent across the whole 6-12% band, not a single
+  lucky point. **Caught mid-validation**: an earlier pass tested the 1-year
+  window on 4h candles but the 180-day window on 1h candles and looked
+  positive on both - that was a methodology bug (mixing candle durations
+  across windows, exactly what this project's own rules say never to do),
+  and re-testing strictly on matched 1h candles for both windows actually
+  came back negative on the 1-year window. Only the properly-matched 4h/4h
+  test passed. Do not run this config on 1h candles.
 
 **LTCMYR was tested and rejected** (2026-08-25) — 4h and 1h candles, multiple
 windows, 15 variants each: no configuration showed a consistent sign across

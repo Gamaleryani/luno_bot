@@ -67,6 +67,42 @@ PROFILES = {
         # matches .github/workflows/sol_range_1h.yml's cron: "35 * * * *" (UTC)
         "schedule": {"interval_hours": 1, "minute_offset": 35},
     },
+    "sol_trend_4h": {
+        "label": "SOLMYR 4h trend-following (min 2 signals, 8% trailing stop)",
+        "PAIR": "SOLMYR",
+        "CANDLE_DURATION": 14400,
+        "ALLOWED_REGIMES": ["trending"],
+        "MIN_AGREEING_SIGNALS": 2,
+        "TRAILING_STOP_PCT": 0.08,
+        # STOP_LOSS_PCT left at config.py's default (3%) - untouched by testing,
+        # still the hard downside floor. TRAILING_STOP_PCT replaces the fixed
+        # TAKE_PROFIT_PCT (see core/risk.check_exit): rides the position as long
+        # as price keeps making new highs, only exits once price falls 8% back
+        # from the peak - built specifically because sol_range_1h/range_1h_defensive/
+        # eth_range_4h/trend_4h all trailed buy-and-hold badly during the
+        # 2026-08 rally (all 4 flagged UNDERPERFORMING by revalidate.py on the
+        # same day this was added).
+        #
+        # Added 2026-08-31 as this project's first genuinely validated
+        # trend-following profile, after two rounds of testing:
+        #   - Round 1 mixed candle durations across the two validation windows
+        #     (4h for the 1-year window, 1h for the 180-day window) and looked
+        #     positive on both - WRONG methodology, caught before deploying.
+        #   - Round 2 re-tested strictly on 4h candles for BOTH windows: +7.86%
+        #     over a 1-year window where SOL fell -52.34% (beats buy-and-hold by
+        #     +60.20pp), AND +8.81% over the last 180 days where SOL rallied
+        #     +13.43% (trails buy-and-hold by only -4.62pp - far closer than any
+        #     other profile/variant tested for any pair, which all trailed by
+        #     15-30pp during the same rally). Also swept TRAILING_STOP_PCT from
+        #     4% to 12% - positive and consistent across the whole 6-12% band,
+        #     not a single lucky point (4-5% was borderline/negative on the
+        #     1-year window, so this isn't a knife's-edge fit).
+        # See strategy_compare.py's "trend_only min2 trailing N%" variants and
+        # conversation history 2026-08-31 for the full sweep output before
+        # touching this. Do NOT run this on 1h candles - that combination was
+        # NOT validated (round 1's apparent 1h pass was the mixed-duration bug).
+        "schedule": {"interval_hours": 4, "minute_offset": 50},
+    },
 }
 
 
