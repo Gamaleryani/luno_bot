@@ -52,8 +52,10 @@ def run_backtest(csv_path: str, log: bool = True, verbose: bool = True):
 
         # 1. manage any open position first (stop-loss / take-profit)
         if position is not None:
+            position["peak_price"] = max(position.get("peak_price", position["entry_price"]), price)
             exit_check = risk.check_exit(position["entry_price"], price, cfg,
-                                          position.get("entry_timestamp"), row["timestamp"])
+                                          position.get("entry_timestamp"), row["timestamp"],
+                                          position.get("peak_price"))
             if exit_check["exit"]:
                 close_position(price, exit_check["reason"], "-", row["timestamp"])
                 continue  # don't also evaluate a new entry same candle

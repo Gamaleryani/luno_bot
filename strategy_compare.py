@@ -49,6 +49,42 @@ VARIANTS = {
     "swing range_only (3%/5%)": {
         "ALLOWED_REGIMES": ["ranging"], "STOP_LOSS_PCT": 0.03, "TAKE_PROFIT_PCT": 0.05,
     },
+    # --- momentum/trend-following candidates (2026-08-31) - built to actually
+    # capture rallies, since every deployed profile is defensive/mean-reversion
+    # and was found trailing buy-and-hold badly in a sustained uptrend ---
+    "momentum trend_only (min2)": {
+        "ALLOWED_REGIMES": ["trending"], "MIN_AGREEING_SIGNALS": 2,
+    },
+    "momentum trend_only (min1)": {
+        "ALLOWED_REGIMES": ["trending"], "MIN_AGREEING_SIGNALS": 1,
+    },
+    "momentum trend_only (min2, 6%/12%)": {
+        "ALLOWED_REGIMES": ["trending"], "MIN_AGREEING_SIGNALS": 2,
+        "STOP_LOSS_PCT": 0.06, "TAKE_PROFIT_PCT": 0.12,
+    },
+    "momentum trend_only (min2, 8%/15%)": {
+        "ALLOWED_REGIMES": ["trending"], "MIN_AGREEING_SIGNALS": 2,
+        "STOP_LOSS_PCT": 0.08, "TAKE_PROFIT_PCT": 0.15,
+    },
+    # --- trailing-stop candidates (2026-08-31) - fixed TAKE_PROFIT_PCT caps
+    # winners the instant it's touched, which is exactly why the momentum
+    # candidates above still can't capture a real rally; a trailing stop
+    # lets the position ride as long as price keeps making new highs ---
+    "trend_only trailing 5%": {
+        "ALLOWED_REGIMES": ["trending"], "TRAILING_STOP_PCT": 0.05,
+    },
+    "trend_only trailing 8%": {
+        "ALLOWED_REGIMES": ["trending"], "TRAILING_STOP_PCT": 0.08,
+    },
+    "trend_only min2 trailing 5%": {
+        "ALLOWED_REGIMES": ["trending"], "MIN_AGREEING_SIGNALS": 2, "TRAILING_STOP_PCT": 0.05,
+    },
+    "trend_only min2 trailing 8%": {
+        "ALLOWED_REGIMES": ["trending"], "MIN_AGREEING_SIGNALS": 2, "TRAILING_STOP_PCT": 0.08,
+    },
+    "trend_only wide-stop(6%) trailing 10%": {
+        "ALLOWED_REGIMES": ["trending"], "STOP_LOSS_PCT": 0.06, "TRAILING_STOP_PCT": 0.10,
+    },
 }
 
 

@@ -20,16 +20,31 @@ def position_size(balance: float, atr: float, price: float, cfg) -> float:
 
 
 def check_exit(entry_price: float, current_price: float, cfg,
-                entry_timestamp: float = None, current_timestamp: float = None) -> dict:
+                entry_timestamp: float = None, current_timestamp: float = None,
+                peak_price: float = None) -> dict:
     """Check whether an open position should be closed on stop-loss,
-    take-profit, or (if cfg.MAX_HOLD_HOURS is set AND both timestamps are
-    given) a max holding time - the latter is what makes a "day trading"
-    style profile actually day-trading rather than just tight stops; it's
-    opt-in and unused by default so existing profiles are unaffected."""
+    take-profit, a trailing stop, or (if cfg.MAX_HOLD_HOURS is set AND both
+    timestamps are given) a max holding time - all opt-in beyond stop-loss,
+    unused by default so existing profiles are unaffected.
+
+    cfg.TRAILING_STOP_PCT (opt-in, requires peak_price) replaces the fixed
+    TAKE_PROFIT_PCT with a ratcheting exit: instead of always selling at a
+    fixed gain, it rides the position as long as price keeps making new
+    highs and only exits once price falls this % back from the highest
+    point seen - built to let a real trend run instead of capping winners
+    the moment TAKE_PROFIT_PCT is first touched."""
     change_pct = (current_price - entry_price) / entry_price
     if change_pct <= -cfg.STOP_LOSS_PCT:
         return {"exit": True, "reason": f"stop-loss hit: {change_pct*100:.1f}%"}
-    if change_pct >= cfg.TAKE_PROFIT_PCT:
+
+    trailing_pct = getattr(cfg, "TRAILING_STOP_PCT", None)
+    if trailing_pct and peak_price is not None:
+        peak = max(peak_price, current_price)
+        drawdown_from_peak = (peak - current_price) / peak
+        if drawdown_from_peak >= trailing_pct:
+            return {"exit": True, "reason": f"trailing stop hit: fell {drawdown_from_peak*100:.1f}% "
+                                             f"from peak {peak:.2f} ({change_pct*100:+.1f}% overall)"}
+    elif change_pct >= cfg.TAKE_PROFIT_PCT:
         return {"exit": True, "reason": f"take-profit hit: {change_pct*100:.1f}%"}
 
     max_hold_hours = getattr(cfg, "MAX_HOLD_HOURS", None)
