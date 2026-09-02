@@ -54,13 +54,13 @@ import sys
 import time
 
 import config as cfg
-from core import indicators, strategy, risk, logger, state as state_mod, notifier, allocations
+from core import indicators, strategy, risk, logger, state as state_mod, notifier, allocations, dip_reentry
 from core.luno_client import LunoClient
 from core.profiles import apply_profile, PROFILES
 from main import fetch_recent_df, is_big_trade, check_real_balance
 
 
-def run_query(client, profile_name, profile_label, balance, position, allocation, manual_hold):
+def run_query(client, profile_name, profile_label, balance, position, allocation, manual_hold, dip_watch=None):
     df = fetch_recent_df(client)
     df = indicators.compute_all(df, cfg)
     row = df.iloc[-1]
@@ -81,6 +81,11 @@ def run_query(client, profile_name, profile_label, balance, position, allocation
         lines.append(f"Position: {position['size_units']:.8f} units @ {position['entry_price']:.2f} "
                       f"({position['size_myr']:.2f} MYR)")
         lines.append(f"Manual hold: {'ON - automated exits disabled' if manual_hold else 'off (normal)'}")
+    elif dip_watch:
+        dip_so_far = (dip_watch["exit_price"] - dip_watch.get("lowest_since_exit", dip_watch["exit_price"])) \
+            / dip_watch["exit_price"] * 100
+        lines.append(f"Position: none (flat) - watching for a dip-reentry since exit @ "
+                     f"{dip_watch['exit_price']:.2f} ({dip_so_far:.1f}% dip so far)")
     else:
         lines.append("Position: none (flat)")
 
@@ -219,6 +224,7 @@ if __name__ == "__main__":
     allocation = allocations.load_allocation(profile_name, cfg.STARTING_BALANCE_MYR)
     st = state_mod.load_state(paths["state_file"], allocation)
     balance, position, manual_hold = st["balance"], st["position"], st["manual_hold"]
+    dip_watch = st["dip_watch"]
 
     client = LunoClient(cfg)
     df = fetch_recent_df(client)
@@ -226,25 +232,30 @@ if __name__ == "__main__":
     price = df.iloc[-1]["close"]
 
     if action == "QUERY":
-        run_query(client, profile_name, paths["label"], balance, position, allocation, manual_hold)
+        run_query(client, profile_name, paths["label"], balance, position, allocation, manual_hold, dip_watch)
     elif action == "BUY":
         if len(parts) != 3:
             print("Usage: BUY <profile> <amount_myr>")
             sys.exit(1)
         amount = float(parts[2])
+        was_flat = position is None
         balance, position = run_buy(client, profile_name, paths["label"], paths["log_dir"],
                                      balance, position, amount, price)
-        state_mod.save_state(paths["state_file"], balance, position, manual_hold)
+        if was_flat and position is not None:
+            dip_watch = None  # a fresh position opened - any earlier dip-watch is moot
+        state_mod.save_state(paths["state_file"], balance, position, manual_hold, dip_watch)
     elif action == "SELL":
         balance, position = run_sell(client, paths["label"], paths["log_dir"], balance, position, price)
         manual_hold = False  # nothing left to hold once the position is closed
-        state_mod.save_state(paths["state_file"], balance, position, manual_hold)
+        if position is None:
+            dip_watch = dip_reentry.start_dip_watch(price, time.time())
+        state_mod.save_state(paths["state_file"], balance, position, manual_hold, dip_watch)
     elif action == "HOLD":
         manual_hold = run_hold(profile_name, paths["label"], position)
-        state_mod.save_state(paths["state_file"], balance, position, manual_hold)
+        state_mod.save_state(paths["state_file"], balance, position, manual_hold, dip_watch)
     elif action == "RESUME":
         manual_hold = run_resume(profile_name, paths["label"])
-        state_mod.save_state(paths["state_file"], balance, position, manual_hold)
+        state_mod.save_state(paths["state_file"], balance, position, manual_hold, dip_watch)
     else:
         print(f"Unknown action '{action}'. Use QUERY, BUY, SELL, HOLD, or RESUME.")
         sys.exit(1)

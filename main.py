@@ -28,7 +28,7 @@ import time
 import pandas as pd
 
 import config as cfg
-from core import indicators, strategy, risk, logger, state as state_mod, notifier, approval, allocations
+from core import indicators, strategy, risk, logger, state as state_mod, notifier, approval, allocations, dip_reentry
 from core.luno_client import LunoClient
 from core.profiles import apply_profile, PROFILES
 
@@ -169,7 +169,7 @@ def _sell(client, profile_name, profile_label, log_dir, approval_dir, balance, p
 
 def run_once(client: LunoClient, profile_name: str, profile_label: str,
              log_dir: str, approval_dir: str, balance: float, position,
-             manual_hold: bool = False):
+             manual_hold: bool = False, dip_watch=None):
     df = fetch_recent_df(client)
     df = indicators.compute_all(df, cfg)
     i = len(df) - 1
@@ -183,18 +183,38 @@ def run_once(client: LunoClient, profile_name: str, profile_label: str,
         logger.log_price(log_dir, price, "-", balance)
         print(f"[HOLD ACTIVE] skipping automated exit checks for {profile_label} "
               f"- use 'SELL {profile_name}' or 'RESUME {profile_name}' to change this.")
-        return balance, position
+        return balance, position, dip_watch
 
-    # 1. manage any open position first (stop-loss / take-profit)
+    # 1. manage any open position first (stop-loss / take-profit / trailing stop)
     if position is not None:
+        position["peak_price"] = max(position.get("peak_price", position["entry_price"]), price)
         exit_check = risk.check_exit(position["entry_price"], price, cfg,
-                                      position.get("entry_timestamp"), time.time())
+                                      position.get("entry_timestamp"), time.time(),
+                                      position.get("peak_price"), row.get("adx"))
         if exit_check["exit"]:
             logger.log_price(log_dir, price, "-", balance)
-            return _sell(client, profile_name, profile_label, log_dir, approval_dir,
-                          balance, position, price, exit_check["reason"], "-")
+            new_balance, new_position = _sell(client, profile_name, profile_label, log_dir, approval_dir,
+                                               balance, position, price, exit_check["reason"], "-")
+            if new_position is None:  # actually closed, not just queued for approval
+                dip_watch = dip_reentry.start_dip_watch(price, time.time())
+            return new_balance, new_position, dip_watch
 
-    # 2. evaluate strategy for a new decision
+    # 2. flat with a live dip-watch: check for a dip-and-recovery re-entry
+    # before falling back to a fresh full signal (see core/dip_reentry.py)
+    if position is None and dip_watch is not None:
+        dip_reentry.update_dip_watch(dip_watch, price)
+        redo = dip_reentry.check_dip_reentry(df, i, cfg, dip_watch, time.time())
+        if redo["reentry"]:
+            size_myr = risk.position_size(balance, row.get("atr", 0), price, cfg)
+            if 0 < size_myr <= balance:
+                logger.log_price(log_dir, price, "-", balance)
+                new_balance, new_position = _buy(client, profile_name, profile_label, log_dir, approval_dir,
+                                                  balance, size_myr, price, redo["reason"], "-")
+                if new_position is not None:
+                    dip_watch = None
+                return new_balance, new_position, dip_watch
+
+    # 3. evaluate strategy for a new decision
     decision = strategy.evaluate(df, i, cfg)
     print(f"[{decision['action']}] {decision['reason']}")
     logger.log_price(log_dir, price, decision["regime"], balance)
@@ -202,14 +222,20 @@ def run_once(client: LunoClient, profile_name: str, profile_label: str,
     if decision["action"] == "BUY" and position is None:
         size_myr = risk.position_size(balance, row.get("atr", 0), price, cfg)
         if 0 < size_myr <= balance:
-            return _buy(client, profile_name, profile_label, log_dir, approval_dir,
-                        balance, size_myr, price, decision["reason"], decision["regime"])
+            new_balance, new_position = _buy(client, profile_name, profile_label, log_dir, approval_dir,
+                                              balance, size_myr, price, decision["reason"], decision["regime"])
+            if new_position is not None:
+                dip_watch = None
+            return new_balance, new_position, dip_watch
 
     elif decision["action"] == "SELL" and position is not None:
-        return _sell(client, profile_name, profile_label, log_dir, approval_dir,
-                      balance, position, price, decision["reason"], decision["regime"])
+        new_balance, new_position = _sell(client, profile_name, profile_label, log_dir, approval_dir,
+                                           balance, position, price, decision["reason"], decision["regime"])
+        if new_position is None:
+            dip_watch = dip_reentry.start_dip_watch(price, time.time())
+        return new_balance, new_position, dip_watch
 
-    return balance, position
+    return balance, position, dip_watch
 
 
 if __name__ == "__main__":
@@ -224,8 +250,8 @@ if __name__ == "__main__":
     print(f"Starting in MODE={cfg.MODE} on pair={cfg.PAIR} profile={args.profile} ({paths['label']}), "
           f"allocation={allocation:.2f} MYR" + (", MANUAL HOLD ACTIVE" if st["manual_hold"] else ""))
     client = LunoClient(cfg)
-    balance, position = run_once(client, args.profile, paths["label"], paths["log_dir"],
-                                  f"state/{args.profile}", st["balance"], st["position"],
-                                  st["manual_hold"])
-    state_mod.save_state(paths["state_file"], balance, position, st["manual_hold"])
+    balance, position, dip_watch = run_once(client, args.profile, paths["label"], paths["log_dir"],
+                                             f"state/{args.profile}", st["balance"], st["position"],
+                                             st["manual_hold"], st["dip_watch"])
+    state_mod.save_state(paths["state_file"], balance, position, st["manual_hold"], dip_watch)
     print(f"Done. Balance={balance:.2f} Position={position}")

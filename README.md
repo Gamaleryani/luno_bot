@@ -10,6 +10,8 @@
   optional `ALLOWED_REGIMES` restriction
 - `core/risk.py` — stop-loss, take-profit (or opt-in trailing stop via
   `TRAILING_STOP_PCT`), volatility-based position sizing
+- `core/dip_reentry.py` — opt-in post-sell dip-and-recovery re-entry
+  (`DIP_REENTRY_PCT`), separate from the main signal path
 - `core/luno_client.py` — Luno API wrapper (`get_candles` requires an authenticated
   key even for read-only history; paper/backtest never place real orders)
 - `core/logger.py` — trade logging + performance summary generator
@@ -26,7 +28,7 @@
 - `approve_trade.py` — approves a pending big live trade
 - `generate_dashboard.py` — renders `dashboard.html` from current state + logs
 
-## Status (2026-08-31)
+## Status (2026-09-01)
 Backtested extensively against real historical data (30d–2.7yr, multiple candle
 durations, 15+ variants per pair, all compared against a buy-and-hold benchmark —
 not just raw returns, since much of a "profit" can just be the asset's own price
@@ -36,8 +38,15 @@ is NOT assumed to transfer to another; each was backtested on its own pair's
 real history before being added:
 
 **XBTMYR (Bitcoin):**
-- **`trend_4h`** — 4h candles, 5%/8% stop-loss/take-profit. Swing-trading style,
-  ~4.7 day average hold. Beats buy-and-hold when the market trends.
+- **`trend_4h`** — 4h candles, 5% stop-loss, **10% trailing stop** (updated
+  2026-09-01, was a fixed 8% take-profit) + **dip-reentry** (dip 6%,
+  12h cooldown, 3-candle confirmation - see below). Swing-trading style,
+  ~4.7 day average hold. Beats buy-and-hold when the market trends. On its
+  own 90-day window this update took it from +2.65% to +7.65% (nearly
+  tripling rally capture); on a 1-year down-market window it went from
+  +5.96% to +4.94% (a modest, accepted give-back - stays clearly
+  profitable either way). Deployed as a real trade-off, not a clean win on
+  both windows.
 - **`range_1h_defensive`** — 1h candles, ranging-regime-only, 2%/3% stop/take-profit.
   ~1-3 day average hold. The only config that stayed profitable through a falling
   market (1-year window where buy-and-hold lost -40.67%, this made +2.59%).
@@ -62,22 +71,55 @@ real history before being added:
   validated **trend-following** profile (the other four are all
   defensive/mean-reversion, which trails buy-and-hold during rallies by
   design). 4h candles, `ALLOWED_REGIMES: ["trending"]`, 2-of-4 signal
-  agreement, and a **trailing stop** (`TRAILING_STOP_PCT: 0.08` in
-  `core/risk.py`) instead of a fixed take-profit - rides a position as long
-  as price keeps making new highs, only exits once price falls 8% back from
-  the peak. Validated on 4h candles across both a 1-year window (+7.86% vs
-  SOL's own -52.34% - beats buy-and-hold by +60.20pp) and the last 180 days
-  (+8.81% vs SOL's own +13.43% rally - trails buy-and-hold by only -4.62pp,
-  far closer than any other profile/variant tested for any pair during the
-  same rally, which all trailed by 15-30pp). Swept the trailing-stop % from
-  4-12%: positive and consistent across the whole 6-12% band, not a single
-  lucky point. **Caught mid-validation**: an earlier pass tested the 1-year
-  window on 4h candles but the 180-day window on 1h candles and looked
-  positive on both - that was a methodology bug (mixing candle durations
-  across windows, exactly what this project's own rules say never to do),
-  and re-testing strictly on matched 1h candles for both windows actually
-  came back negative on the 1-year window. Only the properly-matched 4h/4h
-  test passed. Do not run this config on 1h candles.
+  agreement, and a **trailing stop** (`TRAILING_STOP_PCT` in `core/risk.py`,
+  widened 8%->10% on 2026-09-01) instead of a fixed take-profit - rides a
+  position as long as price keeps making new highs, only exits once price
+  falls back from the peak. Validated on 4h candles across both a 1-year
+  window (+7.86% vs SOL's own -52.34% - beats buy-and-hold by +60.20pp) and
+  the last 180 days (+8.81% vs SOL's own +13.43% rally - trails buy-and-hold
+  by only -4.62pp, far closer than any other profile/variant tested for any
+  pair during the same rally, which all trailed by 15-30pp). Swept the
+  trailing-stop % from 4-12%: positive and consistent across the whole
+  6-12% band, not a single lucky point. **Caught mid-validation**: an
+  earlier pass tested the 1-year window on 4h candles but the 180-day
+  window on 1h candles and looked positive on both - that was a methodology
+  bug (mixing candle durations across windows, exactly what this project's
+  own rules say never to do), and re-testing strictly on matched 1h candles
+  for both windows actually came back negative on the 1-year window. Only
+  the properly-matched 4h/4h test passed. Do not run this config on 1h
+  candles. **Updated 2026-09-01**: also given dip-reentry (dip 6%, 12h
+  cooldown, 3-candle confirmation) on top of the widened trailing stop - a
+  clean improvement on both windows this time (90-day +13.43%->+13.58%,
+  1-year +7.86%->+10.31%).
+
+**Trend-riding exit + dip-reentry, added 2026-09-01** (after `revalidate.py`
+flagged all 5 profiles UNDERPERFORMING buy-and-hold during the ongoing
+rally - fixed take-profits were capping winners early, and waiting for a
+completely fresh signal after a sell missed dips that stabilized and
+turned back up):
+- **`core/risk.py`'s `TRAILING_STOP_PCT`** widened from 8% to 10% on both
+  trend profiles. An ADX-based "strong trend override" (dynamically
+  widening the stop-loss during very strong trends) was also tried and
+  **rejected** - no benefit beyond plain widening, and it actively hurt
+  `sol_trend_4h`.
+- **`core/dip_reentry.py`** (new module) - after a SELL, watches for a
+  defined pullback below the exit price (`DIP_REENTRY_PCT`), then requires
+  a reversal confirmation (RSI turning up from oversold AND
+  `DIP_REENTRY_CONFIRM_CANDLES` candles no longer making new lows) before
+  re-entering, tagged `dip_reentry:` in the trade log for separate
+  attribution in future re-validations. A cooldown
+  (`DIP_REENTRY_COOLDOWN_HOURS`) delays watching after the sell. Tested
+  with a weak 2-candle confirmation first - lost money almost everywhere.
+  Strengthened to 3 candles: robust win for `trend_4h` (positive across a
+  5-7% dip-threshold band, not a single point) and a clean win for
+  `sol_trend_4h`, but **tested negative-to-neutral for all 3 range/defensive
+  profiles under every configuration tried** (`range_1h_defensive`,
+  `eth_range_4h`, `sol_range_1h`) - not deployed there. Their own RSI/
+  Bollinger entry logic already IS a dip-buying signal; this backdoor just
+  added noisy trades that didn't clear that bar.
+- State schema (`core/state.py`) gained a `dip_watch` field to survive
+  between scheduled runs; `manual_command.py`'s `QUERY` shows dip-watch
+  status when flat and watching.
 
 **LTCMYR was tested and rejected** (2026-08-25) — 4h and 1h candles, multiple
 windows, 15 variants each: no configuration showed a consistent sign across

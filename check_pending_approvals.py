@@ -11,8 +11,10 @@ Usage:
     python check_pending_approvals.py
 """
 
+import time
+
 import config as cfg
-from core import approval, state as state_mod
+from core import approval, state as state_mod, dip_reentry
 from core.luno_client import LunoClient
 from core.profiles import apply_profile, PROFILES
 from main import _buy, _sell
@@ -49,19 +51,24 @@ if __name__ == "__main__":
 
         st = state_mod.load_state(paths["state_file"], cfg.STARTING_BALANCE_MYR)
         balance, position = st["balance"], st["position"]
+        manual_hold, dip_watch = st["manual_hold"], st["dip_watch"]
 
         if pending["action"] == "BUY" and position is None:
             balance, position = _buy(client, name, paths["label"], paths["log_dir"], approval_dir,
                                       balance, pending["size_myr"], price, pending["reason"], "-")
+            if position is not None:
+                dip_watch = None
         elif pending["action"] == "SELL" and position is not None:
             balance, position = _sell(client, name, paths["label"], paths["log_dir"], approval_dir,
                                        balance, position, price, pending["reason"], "-")
+            if position is None:
+                dip_watch = dip_reentry.start_dip_watch(price, time.time())
         else:
             print(f"[{name}] pending action no longer matches current position state - "
                   f"dropping stale pending without executing.")
             approval.clear_pending(approval_dir)
             continue
 
-        state_mod.save_state(paths["state_file"], balance, position)
+        state_mod.save_state(paths["state_file"], balance, position, manual_hold, dip_watch)
         print(f"[{name}] executed pending {pending['action']} after approval/timeout. "
               f"Balance={balance:.2f} Position={position}")

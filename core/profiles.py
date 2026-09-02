@@ -14,10 +14,42 @@ config.py's XBTMYR if a profile doesn't override it.
 
 PROFILES = {
     "trend_4h": {
-        "label": "4h wider-stops (trend-friendly)",
+        "label": "4h trend-following (10% trailing + dip-reentry)",
         "CANDLE_DURATION": 14400,
         "STOP_LOSS_PCT": 0.05,
-        "TAKE_PROFIT_PCT": 0.08,
+        "TAKE_PROFIT_PCT": 0.08,  # superseded by TRAILING_STOP_PCT below - kept for reference/rollback
+        "TRAILING_STOP_PCT": 0.10,
+        "DIP_REENTRY_PCT": 0.06,
+        "DIP_REENTRY_COOLDOWN_HOURS": 12,
+        "DIP_REENTRY_CONFIRM_CANDLES": 3,
+        # Updated 2026-09-01 after revalidate.py flagged all 5 profiles
+        # UNDERPERFORMING buy-and-hold during the ongoing rally (this one by
+        # -17.13pp on a 90-day window). Diagnosis: the fixed 8% take-profit
+        # capped winners early, and a fresh full signal was too slow to
+        # re-enter after a shakeout. Two changes, both re-tested on this
+        # profile's own 90-day window AND a 1-year down-market window before
+        # deploying:
+        #   - TRAILING_STOP_PCT (replaces the fixed take-profit): widened
+        #     8%->10% band tested 10-15%, all identical here - rides winners
+        #     further instead of capping at +8%.
+        #   - DIP_REENTRY_PCT (see core/dip_reentry.py): after a SELL, watches
+        #     for a defined dip below the exit price then a REVERSAL
+        #     CONFIRMATION (RSI turning up from oversold + 3 candles no
+        #     longer making new lows) before re-entering - deliberately a
+        #     stricter 3-candle confirmation than the 2-candle version first
+        #     tried, which lost money; swept dip% 4-10% at confirm=3 and
+        #     found a robust positive plateau at 5-7% on BOTH windows, not a
+        #     single lucky point (cooldown 6-24h made no measurable
+        #     difference at this candle duration).
+        # Combined result: 90-day +2.65% -> +7.65% (rally capture nearly
+        # tripled), 1-year down-market +5.96% -> +4.94% (a real but modest
+        # give-back, still solidly positive). This is a genuine trade-off,
+        # not a clean win on both windows - deployed anyway on 2026-09-01
+        # since the down-market case stays clearly profitable either way and
+        # the rally-capture gain is large. An ADX-based "strong trend
+        # override" (dynamically widening stop-loss during very strong
+        # trends) was also tested and REJECTED - showed no benefit beyond
+        # plain trailing-stop widening and actively hurt sol_trend_4h.
         # matches .github/workflows/trend_4h.yml's cron: "5 */4 * * *" (UTC)
         "schedule": {"interval_hours": 4, "minute_offset": 5},
     },
@@ -68,20 +100,35 @@ PROFILES = {
         "schedule": {"interval_hours": 1, "minute_offset": 35},
     },
     "sol_trend_4h": {
-        "label": "SOLMYR 4h trend-following (min 2 signals, 8% trailing stop)",
+        "label": "SOLMYR 4h trend-following (min 2 signals, 10% trailing + dip-reentry)",
         "PAIR": "SOLMYR",
         "CANDLE_DURATION": 14400,
         "ALLOWED_REGIMES": ["trending"],
         "MIN_AGREEING_SIGNALS": 2,
-        "TRAILING_STOP_PCT": 0.08,
-        # STOP_LOSS_PCT left at config.py's default (3%) - untouched by testing,
-        # still the hard downside floor. TRAILING_STOP_PCT replaces the fixed
-        # TAKE_PROFIT_PCT (see core/risk.check_exit): rides the position as long
-        # as price keeps making new highs, only exits once price falls 8% back
-        # from the peak - built specifically because sol_range_1h/range_1h_defensive/
-        # eth_range_4h/trend_4h all trailed buy-and-hold badly during the
-        # 2026-08 rally (all 4 flagged UNDERPERFORMING by revalidate.py on the
-        # same day this was added).
+        "TRAILING_STOP_PCT": 0.10,  # widened from 0.08 on 2026-09-01, see note below
+        "DIP_REENTRY_PCT": 0.06,
+        "DIP_REENTRY_COOLDOWN_HOURS": 12,
+        "DIP_REENTRY_CONFIRM_CANDLES": 3,
+        # Updated 2026-09-01: same round of testing as trend_4h (see its
+        # comment above for the dip-reentry mechanism) after this profile was
+        # also flagged UNDERPERFORMING (-28.06pp on a 90-day window) despite
+        # already having a trailing stop. Widening 8%->10% alone was flat on
+        # the 90-day window and +1.26pp on the 1-year window (non-negative on
+        # both). Adding dip-reentry (dip 6%, cooldown 12h, confirm 3 candles -
+        # same settings as trend_4h, not independently re-swept for this
+        # pair) on top: 90-day +13.43%->+13.58% (marginal), 1-year
+        # +7.86%->+10.31% (the strongest single result of anything tested
+        # this round) - a clean improvement on BOTH windows, unlike trend_4h's
+        # trade-off.
+        #
+        # STOP_LOSS_PCT left at config.py's default (3%) - untouched by
+        # testing, still the hard downside floor. TRAILING_STOP_PCT replaces
+        # the fixed TAKE_PROFIT_PCT (see core/risk.check_exit): rides the
+        # position as long as price keeps making new highs, only exits once
+        # price falls 10% back from the peak - built specifically because
+        # sol_range_1h/range_1h_defensive/eth_range_4h/trend_4h all trailed
+        # buy-and-hold badly during the 2026-08 rally (all 4 flagged
+        # UNDERPERFORMING by revalidate.py on the same day this was added).
         #
         # Added 2026-08-31 as this project's first genuinely validated
         # trend-following profile, after two rounds of testing:
