@@ -8,3 +8,4 @@ timestamp,action,price,balance,regime,reason
 2026-08-24T17:41:33.961053+00:00,SELL,318239.0,101.71653825454594,-,MANUAL: user-issued SELL command
 2026-08-25T04:42:19.912042+00:00,BUY,323507.0,58.126538254545935,trending,3 bullish / 1 bearish votes (need 3) in trending regime
 2026-09-03T08:44:20.746522+00:00,SELL,314024.0,100.39646704693683,trending,0 bullish / 3 bearish votes (need 3) in trending regime
+2026-09-03T22:24:53.481800+00:00,BUY,327500.0,55.361477046936834,trending,3 bullish / 1 bearish votes (need 3) in trending regime
