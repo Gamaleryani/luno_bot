@@ -1,12 +1,10 @@
 {
-  "balance": 58.126538254545935,
-  "position": {
-    "entry_price": 323507.0,
-    "size_myr": 43.59,
-    "size_units": 0.00013474206122278653,
-    "entry_timestamp": 1787632939.9119377,
-    "peak_price": 323507.0
-  },
+  "balance": 100.39646704693683,
+  "position": null,
   "manual_hold": false,
-  "dip_watch": null
+  "dip_watch": {
+    "exit_price": 314024.0,
+    "exit_timestamp": 1788425061.9805648,
+    "lowest_since_exit": 314024.0
+  }
 }
