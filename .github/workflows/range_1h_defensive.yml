@@ -38,13 +38,23 @@ jobs:
         run: |
           git config user.name "luno-bot"
           git config user.email "actions@users.noreply.github.com"
+          git config merge.ours.driver true
           git add state/ logs/ dashboard.html
           git diff --staged --quiet && exit 0
           git commit -m "range_1h_defensive run $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           for i in 1 2 3 4 5; do
-            git push && exit 0
-            git fetch origin main
-            git rebase origin/main
+            if git push; then
+              exit 0
+            fi
+            if ! git fetch origin main; then
+              echo "fetch failed on attempt $i - retrying"
+              sleep 3
+              continue
+            fi
+            if ! git rebase origin/main; then
+              echo "rebase conflict on attempt $i - aborting and retrying"
+              git rebase --abort
+            fi
             sleep 3
           done
           echo "::error::Failed to push after 5 retries"
