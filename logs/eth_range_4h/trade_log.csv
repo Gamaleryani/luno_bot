@@ -1,2 +1,3 @@
 timestamp,action,price,balance,regime,reason
 2026-08-26T02:27:26.371475+00:00,BUY,9862.0,49.95,-,MANUAL: user-issued BUY command
+2026-09-11T19:09:58.391275+00:00,SELL,10398.0,102.61478401946867,-,take-profit hit: 5.4%
