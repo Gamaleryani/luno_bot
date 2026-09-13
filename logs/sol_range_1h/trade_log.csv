@@ -1,3 +1,4 @@
 timestamp,action,price,balance,regime,reason
 2026-08-26T02:32:06.694162+00:00,BUY,391.07,49.95,-,MANUAL: user-issued BUY command
 2026-08-27T00:58:22.879473+00:00,SELL,409.42,102.2437811644974,-,take-profit hit: 4.7%
+2026-09-13T10:30:04.718112+00:00,BUY,408.45,52.57416116449741,ranging,3 bullish / 1 bearish votes (need 3) in ranging regime
