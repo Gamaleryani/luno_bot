@@ -10,3 +10,4 @@ timestamp,action,price,balance,regime,reason
 2026-09-26T13:23:50.617222+00:00,BUY,495.15,59.92931899298598,trending,2 bullish / 0 bearish votes (need 2) in trending regime
 2026-09-29T00:35:06.975749+00:00,SELL,485.91,101.69255484878727,trending,0 bullish / 2 bearish votes (need 2) in trending regime
 2026-10-02T15:02:19.454384+00:00,BUY,498.0,57.95886484878727,trending,2 bullish / 1 bearish votes (need 2) in trending regime
+2026-10-07T15:47:34.016063+00:00,SELL,482.56,100.25196395240172,-,stop-loss hit: -3.1%
