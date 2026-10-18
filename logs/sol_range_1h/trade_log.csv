@@ -4,3 +4,4 @@ timestamp,action,price,balance,regime,reason
 2026-09-13T10:30:04.718112+00:00,BUY,408.45,52.57416116449741,ranging,3 bullish / 1 bearish votes (need 3) in ranging regime
 2026-09-14T19:32:32.760469+00:00,SELL,421.5,103.72831753614633,-,take-profit hit: 3.2%
 2026-10-16T16:51:58.345120+00:00,BUY,426.04,55.66029753614633,ranging,3 bullish / 0 bearish votes (need 3) in ranging regime
+2026-10-18T21:45:41.779256+00:00,SELL,415.18,102.40944469697631,-,stop-loss hit: -2.5%
