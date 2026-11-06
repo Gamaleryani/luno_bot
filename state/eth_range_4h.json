@@ -4,7 +4,8 @@
     "entry_price": 9199.0,
     "size_myr": 39.59,
     "size_units": 0.004303728666159365,
-    "entry_timestamp": 1793915951.6142359
+    "entry_timestamp": 1793915951.6142359,
+    "peak_price": 9199.0
   },
   "manual_hold": false,
   "dip_watch": null
