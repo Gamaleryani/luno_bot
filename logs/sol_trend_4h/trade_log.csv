@@ -22,3 +22,4 @@ timestamp,action,price,balance,regime,reason
 2026-11-05T01:04:37.328751+00:00,BUY,386.53,57.26610566141861,trending,2 bullish / 0 bearish votes (need 2) in trending regime
 2026-11-05T20:17:52.603181+00:00,SELL,365.99,94.49726762452626,-,stop-loss hit: -5.3%
 2026-11-11T07:11:33.695189+00:00,BUY,340.39,56.40921762452626,-,"dip_reentry: 7.8% dip from exit 365.99, RSI 29.7 turning up from oversold, lows stabilizing"
+2026-11-11T23:05:18.529452+00:00,SELL,346.29,95.08003100182876,trending,0 bullish / 2 bearish votes (need 2) in trending regime
