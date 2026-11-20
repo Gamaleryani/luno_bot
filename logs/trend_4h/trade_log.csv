@@ -18,3 +18,4 @@ timestamp,action,price,balance,regime,reason
 2026-11-04T19:32:32.085284+00:00,SELL,325000.0,104.71889630096993,ranging,0 bullish / 3 bearish votes (need 3) in ranging regime
 2026-11-15T15:28:43.854667+00:00,BUY,270859.0,64.38860630096994,-,"dip_reentry: 16.7% dip from exit 325000.00, RSI 34.6 turning up from oversold, lows stabilizing"
 2026-11-16T18:07:53.326151+00:00,SELL,265659.0,103.86559509916384,trending,0 bullish / 3 bearish votes (need 3) in trending regime
+2026-11-20T16:49:07.865477+00:00,BUY,248000.0,61.29306509916384,ranging,3 bullish / 1 bearish votes (need 3) in ranging regime
